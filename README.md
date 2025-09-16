@@ -1,4 +1,3 @@
-```markdown
 # MCP-Based Local Development Context Engine  
 ## Phases 1 to 3: Discovery, Requirements & Design  
 
@@ -141,8 +140,6 @@ If you want, I can provide this as a clean downloadable Markdown file or segment
 
 ---
 
-Would you like me to generate the file for download now?  
-```
 
 Sources
 [1] MCP server: A step-by-step guide to building from scratch - Composio https://composio.dev/blog/mcp-server-step-by-step-guide-to-building-from-scrtch
