@@ -51,7 +51,7 @@ Create a **privacy-first, model-agnostic, MCP-powered local context engine** tha
 
 ### High-Level Architecture Diagram
 
-[42 Context Arc](./42ContextArc.png)
+[42 Context Arc](./images/42ContextArc.png)
 
 - **MCP Clients** connect over stdio or HTTP using MCP protocol; all user interaction happens in these clients.  
 - **MCP Server** manages incoming requests, exposes tools, and delegates complex logic to PocketFlow workflows.  
@@ -142,12 +142,12 @@ If you want, I can provide this as a clean downloadable Markdown file or segment
 
 
 Sources
-[1] MCP server: A step-by-step guide to building from scratch - Composio https://composio.dev/blog/mcp-server-step-by-step-guide-to-building-from-scrtch
-[2] Core architecture - Model Context Protocol （MCP） https://modelcontextprotocol.info/docs/concepts/architecture/
-[3] Architecture overview - Model Context Protocol https://modelcontextprotocol.io/docs/concepts/architecture
-[4] Data-Everything/mcp-server-templates: A flexible platform ... - GitHub https://github.com/Data-Everything/mcp-server-templates
-[5] Code Documentation Generation MCP Server - Open Source at AWS https://awslabs.github.io/mcp/servers/code-doc-gen-mcp-server/
-[6] Build an MCP server - Model Context Protocol https://modelcontextprotocol.io/quickstart/server
-[7] Build Agents using Model Context Protocol on Azure | Microsoft Learn https://learn.microsoft.com/en-us/azure/developer/ai/intro-agents-mcp
-[8] Model Context Protocol (MCP) - Anthropic API https://docs.anthropic.com/en/docs/mcp
-[9] stevennevins/architect-mcp-server - GitHub https://github.com/stevennevins/architect-mcp-server
+- [1] MCP server: A step-by-step guide to building from scratch - Composio https://composio.dev/blog/mcp-server-step-by-step-guide-to-building-from-scrtch
+- [2] Core architecture - Model Context Protocol （MCP） https://modelcontextprotocol.info/docs/concepts/architecture/
+- [3] Architecture overview - Model Context Protocol https://modelcontextprotocol.io/docs/concepts/architecture
+- [4] Data-Everything/mcp-server-templates: A flexible platform ... - GitHub https://github.com/Data-Everything/mcp-server-templates
+- [5] Code Documentation Generation MCP Server - Open Source at AWS https://awslabs.github.io/mcp/servers/code-doc-gen-mcp-server/
+- [6] Build an MCP server - Model Context Protocol https://modelcontextprotocol.io/quickstart/server
+- [7] Build Agents using Model Context Protocol on Azure | Microsoft Learn https://learn.microsoft.com/en-us/azure/developer/ai/intro-agents-mcp
+- [8] Model Context Protocol (MCP) - Anthropic API https://docs.anthropic.com/en/docs/mcp
+- [9] stevennevins/architect-mcp-server - GitHub https://github.com/stevennevins/architect-mcp-server
