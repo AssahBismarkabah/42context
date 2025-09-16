@@ -51,7 +51,7 @@ Create a **privacy-first, model-agnostic, MCP-powered local context engine** tha
 
 ### High-Level Architecture Diagram
 
-[42 Context Arc](./images/42ContextArc.png)
+![42 Context Arc](./images/42ContextArc.png)
 
 - **MCP Clients** connect over stdio or HTTP using MCP protocol; all user interaction happens in these clients.  
 - **MCP Server** manages incoming requests, exposes tools, and delegates complex logic to PocketFlow workflows.  
