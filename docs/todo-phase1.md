@@ -12,8 +12,8 @@
 - [x] Implement file system watcher supporting native APIs on target OSes (macOS, Linux, Windows)
 - [x] Integrate Tree-sitter for multi-language parsing of project code files
 - [x] Design incremental parsing and AST update on file change/save
-- [ ] Extract semantic code chunks based on AST (functions, classes, etc.)
-- [ ] Implement efficient storage/cache of parsed data for quick retrieval
+- [x] Extract semantic code chunks based on AST (functions, classes, etc.)
+- [x] Implement efficient storage/cache of parsed data for quick retrieval
 
 ### 2. Embedding & Semantic Search  
 - [ ] Integrate local embedding generation model (e.g., all-MiniLM-L6-v2 or equivalent)  
