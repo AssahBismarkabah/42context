@@ -1,4 +1,5 @@
 
+
 import type ParserType from 'tree-sitter';
 const Parser = require('tree-sitter');
 const TypeScript = require('tree-sitter-typescript');
@@ -12,7 +13,7 @@ const Java = require('tree-sitter-java');
 /**
  * Supported programming languages
  */
-type SupportedLanguage =
+export type SupportedLanguage =
   | 'typescript'
   | 'javascript'
   | 'python'
@@ -25,7 +26,7 @@ type SupportedLanguage =
 /**
  * Configuration for the code parser
  */
-interface CodeParserOptions {
+export interface CodeParserOptions {
   languages?: SupportedLanguage[];
   maxFileSize?: number;
   timeout?: number;
@@ -34,7 +35,7 @@ interface CodeParserOptions {
 /**
  * Represents a semantic code chunk extracted from AST
  */
-interface CodeChunk {
+export interface CodeChunk {
   id: string;
   type: 'function' | 'class' | 'method' | 'variable' | 'interface' | 'type' | 'import' | 'export';
   name: string;
@@ -52,11 +53,10 @@ interface CodeChunk {
   timestamp: number;
 }
 
-
 /**
  * Tree-sitter based code parser for multiple programming languages
  */
-class CodeParser {
+export class CodeParser {
   private parsers: Map<SupportedLanguage, typeof Parser> = new Map();
   private readonly options: Required<CodeParserOptions>;
 
@@ -487,12 +487,25 @@ class CodeParser {
   private extractDependencies(node: ParserType.SyntaxNode, language: SupportedLanguage): string[] {
     const dependencies: string[] = [];
     
-    // This is a simplified implementation
-    // In a real implementation, you'd walk the AST and find all references
+    // Find all identifier references in the current scope
+    const identifierNodes = this.findAllNodesByType(node, 'identifier');
+    const localIdentifiers = new Set<string>();
     
-    // Look for import statements in the same scope
+    // First, collect all local identifiers (function parameters, variables, etc.)
+    this.collectLocalIdentifiers(node, language, localIdentifiers);
+    
+    // Then find external references (excluding local identifiers and built-ins)
+    for (const identifierNode of identifierNodes) {
+      const identifierName = identifierNode.text;
+      
+      // Skip local identifiers, built-ins, and common keywords
+      if (this.isExternalReference(identifierName, language, localIdentifiers)) {
+        dependencies.push(identifierName);
+      }
+    }
+    
+    // Also collect import statements
     const importPatterns = this.getImportPatterns(language);
-    
     for (const pattern of importPatterns) {
       const importNodes = this.findAllNodesByType(node, pattern);
       for (const importNode of importNodes) {
@@ -503,7 +516,154 @@ class CodeParser {
       }
     }
     
-    return dependencies;
+    // Remove duplicates and return
+    return [...new Set(dependencies)];
+  }
+
+  /**
+   * Collect local identifiers (parameters, variables, etc.) to exclude from dependencies
+   */
+  private collectLocalIdentifiers(node: ParserType.SyntaxNode, language: SupportedLanguage, localIdentifiers: Set<string>): void {
+    // Find parameter declarations
+    const paramPatterns = this.getParameterPatterns(language);
+    for (const pattern of paramPatterns) {
+      const paramNodes = this.findAllNodesByType(node, pattern);
+      for (const paramNode of paramNodes) {
+        const paramName = this.extractNodeName(paramNode, language);
+        if (paramName && paramName !== 'anonymous') {
+          localIdentifiers.add(paramName);
+        }
+      }
+    }
+    
+    // Find variable declarations
+    const varPatterns = this.getVariableDeclarationPatterns(language);
+    for (const pattern of varPatterns) {
+      const varNodes = this.findAllNodesByType(node, pattern);
+      for (const varNode of varNodes) {
+        const varName = this.extractNodeName(varNode, language);
+        if (varName && varName !== 'anonymous') {
+          localIdentifiers.add(varName);
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if an identifier is an external reference (not local or built-in)
+   */
+  private isExternalReference(identifierName: string, language: SupportedLanguage, localIdentifiers: Set<string>): boolean {
+    // Skip if it's a local identifier
+    if (localIdentifiers.has(identifierName)) {
+      return false;
+    }
+    
+    // Skip built-in keywords and common names
+    if (this.isBuiltInIdentifier(identifierName, language)) {
+      return false;
+    }
+    
+    // Skip very short identifiers (likely not meaningful)
+    if (identifierName.length < 2) {
+      return false;
+    }
+    
+    // Skip numeric identifiers
+    if (/^\d+$/.test(identifierName)) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Check if an identifier is a built-in keyword or common name
+   */
+  private isBuiltInIdentifier(identifierName: string, language: SupportedLanguage): boolean {
+    const builtIns = this.getBuiltInIdentifiers(language);
+    return builtIns.has(identifierName.toLowerCase());
+  }
+
+  /**
+   * Get built-in identifiers for different languages
+   */
+  private getBuiltInIdentifiers(language: SupportedLanguage): Set<string> {
+    const commonBuiltIns = new Set([
+      'console', 'log', 'error', 'warn', 'info', 'debug',
+      'true', 'false', 'null', 'undefined', 'this', 'self',
+      'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default',
+      'break', 'continue', 'return', 'function', 'class', 'interface',
+      'public', 'private', 'protected', 'static', 'final', 'const', 'let', 'var'
+    ]);
+    
+    switch (language) {
+      case 'typescript':
+      case 'javascript':
+        return new Set([
+          ...commonBuiltIns,
+          'Array', 'Object', 'String', 'Number', 'Boolean', 'Date', 'Math',
+          'JSON', 'Promise', 'async', 'await', 'try', 'catch', 'throw', 'new',
+          'typeof', 'instanceof', 'in', 'of', 'delete', 'void', 'yield'
+        ]);
+      case 'python':
+        return new Set([
+          ...commonBuiltIns,
+          'print', 'len', 'range', 'str', 'int', 'float', 'bool', 'list', 'dict',
+          'tuple', 'set', 'import', 'from', 'as', 'def', 'class', 'try', 'except',
+          'finally', 'raise', 'with', 'pass', 'lambda', 'global', 'nonlocal'
+        ]);
+      case 'java':
+        return new Set([
+          ...commonBuiltIns,
+          'System', 'String', 'Integer', 'Double', 'Boolean', 'ArrayList', 'HashMap',
+          'package', 'import', 'extends', 'implements', 'abstract', 'synchronized',
+          'volatile', 'transient', 'native', 'strictfp', 'assert'
+        ]);
+      default:
+        return commonBuiltIns;
+    }
+  }
+
+  /**
+   * Get parameter patterns for different languages
+   */
+  private getParameterPatterns(language: SupportedLanguage): string[] {
+    switch (language) {
+      case 'typescript':
+      case 'javascript':
+        return ['required_parameter', 'optional_parameter', 'rest_parameter'];
+      case 'python':
+        return ['parameters', 'default_parameter', 'typed_parameter'];
+      case 'java':
+        return ['formal_parameter', 'receiver_parameter'];
+      case 'go':
+        return ['parameter_declaration', 'variadic_parameter_declaration'];
+      case 'rust':
+        return ['function_parameter', 'self_parameter'];
+      default:
+        return [];
+    }
+  }
+
+  /**
+   * Get variable declaration patterns for different languages
+   */
+  private getVariableDeclarationPatterns(language: SupportedLanguage): string[] {
+    switch (language) {
+      case 'typescript':
+      case 'javascript':
+        return ['variable_declarator', 'lexical_declaration'];
+      case 'python':
+        return ['assignment', 'expression_statement'];
+      case 'java':
+        return ['variable_declarator', 'local_variable_declaration'];
+      case 'go':
+        return ['var_declaration', 'short_var_declaration'];
+      case 'rust':
+        return ['let_declaration', 'const_item'];
+      default:
+        return [];
+    }
   }
 
   /**

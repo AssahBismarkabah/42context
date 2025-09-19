@@ -16,11 +16,11 @@
 - [x] Implement efficient storage/cache of parsed data for quick retrieval
 
 ### 2. Embedding & Semantic Search  
-- [ ] Integrate local embedding generation model (e.g., all-MiniLM-L6-v2 or equivalent)  
-- [ ] Develop vectorization pipeline for code chunks  
-- [ ] Choose and set up vector database (ChromaDB or Faiss) for persistence and similarity search  
-- [ ] Implement vector index update on code change events (incremental vector updates)  
-- [ ] Implement semantic search API supporting query embedding and nearest neighbors retrieval  
+- [x] Integrate local embedding generation model (e.g., all-MiniLM-L6-v2 or equivalent)  
+- [x] Develop vectorization pipeline for code chunks  
+- [x] Choose and set up vector database (ChromaDB or Faiss) for persistence and similarity search  
+- [x] Implement vector index update on code change events (incremental vector updates)  
+- [x] Implement semantic search API supporting query embedding and nearest neighbors retrieval  
 
 ### 3. MCP Server Development  
 - [ ] Implement MCP transport layers: stdio and HTTP JSON-RPC server  

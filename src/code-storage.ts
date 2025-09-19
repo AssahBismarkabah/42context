@@ -2,7 +2,7 @@
  * Code Storage Service for efficient caching and retrieval of parsed code chunks
  */
 
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Code chunk interface (matching code-parser)
@@ -286,6 +286,7 @@ class CodeStorage {
 }
 
 /**
- * CommonJS exports
+ * ES Module exports
  */
-module.exports = { CodeStorage };
+export { CodeStorage };
+export type { CodeChunk, SearchQuery, StorageOptions };
