@@ -4,7 +4,6 @@
   <p><strong>Semantic Code Search and Analysis Platform</strong></p>
 </div>
 
-<hr>
 
 <div align="center" style="line-height:1">
   <a href="https://github.com/AssahBismarkabah/42context"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-Repository-blue?logo=github"/></a>
