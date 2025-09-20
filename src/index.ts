@@ -4,7 +4,6 @@ import { FileWatcher } from './file-watcher.js';
 import { SemanticSearch } from './semantic-search.js';
 import { ConfigManager } from './config.js';
 import { getGlobalLogger, LogLevel } from './logger.js';
-import { program, OptionValues } from 'commander';
 import path from 'path';
 import { readFileSync } from 'fs';
 
@@ -324,43 +323,6 @@ export class ContextEngine {
   }
 
 }
-
-// CLI Setup
-program
-  .name('mcp-local-context-engine')
-  .description('MCP-Based Local Development Context Engine')
-  .version('0.1.0')
-  .option('-p, --project-path <path>', 'Project path to watch', process.cwd())
-  .option('-d, --debug', 'Enable debug mode')
-  .action(async (options: OptionValues) => {
-    if (options.debug) {
-      console.log('Debug mode enabled');
-      console.log('Options:', options);
-    }
-
-    const engine = new ContextEngine({
-      projectPath: path.resolve(options.projectPath as string),
-      debug: options.debug
-    });
-
-    try {
-      await engine.start();
-    } catch (error) {
-      console.error('Failed to start context engine:', error);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('stats')
-  .description('Show engine statistics')
-  .action(() => {
-    // This would need to communicate with a running instance
-    console.log('Stats command - implementation pending');
-  });
-
-// Parse command line arguments
-program.parse();
 
 // Export for module usage
 export default ContextEngine;

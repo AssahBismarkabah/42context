@@ -40,8 +40,8 @@
 - [ ] Set max agents and workflow timeout according to config  
 
 ### 5. CLI Interface and Developer Tools  
-- [ ] Build MVP CLI tool for administrative tasks and debug commands  
-- [ ] Implement CLI commands for search, analyze, completion, and config management  
+- [x] Build MVP CLI tool for administrative tasks and debug commands  
+- [x] Implement CLI commands for search, analyze, completion, and config management  
 - [ ] Enable CLI to connect as an MCP client or directly invoke server tools  
 
 ### 6. Testing & CI  

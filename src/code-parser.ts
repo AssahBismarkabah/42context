@@ -8,7 +8,15 @@ const Python = require('tree-sitter-python');
 const Go = require('tree-sitter-go');
 const Rust = require('tree-sitter-rust');
 const Cpp = require('tree-sitter-cpp');
-const Java = require('tree-sitter-java');
+
+// Java language module
+let Java: any;
+try {
+  Java = require('tree-sitter-java');
+} catch (error) {
+  console.error('Failed to import tree-sitter-java:', error);
+  Java = null;
+}
 
 /**
  * Supported programming languages
@@ -62,7 +70,7 @@ export class CodeParser {
 
   constructor(options: CodeParserOptions = {}) {
     this.options = {
-      languages: options.languages || ['typescript', 'javascript', 'python', 'go', 'rust', 'cpp'],
+      languages: options.languages || ['typescript', 'javascript', 'python', 'go', 'rust', 'cpp', 'java'],
       maxFileSize: options.maxFileSize || 1024 * 1024, // 1MB default
       timeout: options.timeout || 5000 // 5 seconds default
     };
@@ -83,6 +91,8 @@ export class CodeParser {
           parser.setLanguage(languageModule);
           this.parsers.set(language, parser);
           console.log(`Initialized Tree-sitter parser for ${language}`);
+        } else {
+          console.warn(`No language module available for ${language}`);
         }
       } catch (error) {
         console.error(`Failed to initialize parser for ${language}:`, error);
@@ -94,25 +104,30 @@ export class CodeParser {
    * Get the appropriate language module for Tree-sitter
    */
   private getLanguageModule(language: SupportedLanguage): any {
-    switch (language) {
-      case 'typescript':
-        return TypeScript.typescript;
-      case 'javascript':
-        return JavaScript;
-      case 'python':
-        return Python;
-      case 'go':
-        return Go;
-      case 'rust':
-        return Rust;
-      case 'cpp':
-      case 'c':
-        return Cpp;
-      case 'java':
-        return Java.java;
-      default:
-        console.warn(`No language module available for ${language}`);
-        return null;
+    try {
+      switch (language) {
+        case 'typescript':
+          return TypeScript.typescript;
+        case 'javascript':
+          return JavaScript;
+        case 'python':
+          return Python;
+        case 'go':
+          return Go;
+        case 'rust':
+          return Rust;
+        case 'cpp':
+        case 'c':
+          return Cpp;
+        case 'java':
+          return Java || null;
+        default:
+          console.warn(`No language module available for ${language}`);
+          return null;
+      }
+    } catch (error) {
+      console.error(`Error getting language module for ${language}:`, error);
+      return null;
     }
   }
 
