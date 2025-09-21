@@ -1,4 +1,3 @@
-
 import { Command } from 'commander';
 import { ContextEngine } from './index.js';
 import { ConfigManager } from './config.js';
@@ -37,7 +36,7 @@ export class CLIInterface {
       .version('0.1.0')
       .option('-d, --debug', 'Enable debug mode')
       .option('-c, --config <path>', 'Configuration file path')
-      .hook('preAction', (thisCommand) => {
+      .hook('preAction', thisCommand => {
         const options = thisCommand.opts();
         if (options.debug) {
           logger.setLevel(LogLevel.DEBUG);
@@ -50,7 +49,7 @@ export class CLIInterface {
       .command('start')
       .description('Start the context engine with file watching')
       .option('-p, --project-path <path>', 'Project path to watch', process.cwd())
-      .action(async (options) => {
+      .action(async options => {
         try {
           await this.startEngine(options.projectPath, program.opts().debug);
         } catch (error) {
@@ -132,7 +131,7 @@ export class CLIInterface {
       .command('stats')
       .description('Show system statistics')
       .option('--format <format>', 'Output format (json, table)', 'table')
-      .action(async (options) => {
+      .action(async options => {
         try {
           await this.statsCommand(options);
         } catch (error) {
@@ -148,7 +147,7 @@ export class CLIInterface {
       .option('--vectors', 'Clear vector store')
       .option('--cache', 'Clear embedding cache')
       .option('--all', 'Clear everything')
-      .action(async (options) => {
+      .action(async options => {
         try {
           await this.clearCommand(options);
         } catch (error) {
@@ -177,7 +176,7 @@ export class CLIInterface {
       .command('completion')
       .description('Generate shell completion script')
       .argument('<shell>', 'Shell type: bash, zsh, fish')
-      .action((shell) => {
+      .action(shell => {
         this.generateCompletion(shell);
       });
   }
@@ -186,13 +185,13 @@ export class CLIInterface {
    * Start the context engine
    */
   private async startEngine(projectPath: string, debug: boolean): Promise<void> {
-    console.log(`Starting MCP Local Context Engine...`);
+    console.log('Starting MCP Local Context Engine...');
     console.log(`Project path: ${path.resolve(projectPath)}`);
-    
+
     this.engine = new ContextEngine({
       projectPath: path.resolve(projectPath),
-      debug: debug,
-      configPath: program.opts().config
+      debug,
+      configPath: program.opts().config,
     });
 
     await this.engine.start();
@@ -203,7 +202,7 @@ export class CLIInterface {
    */
   private async searchCommand(query: string, options: any): Promise<void> {
     console.log(`Searching for: "${query}"`);
-    
+
     const config = this.configManager.getConfig();
     const semanticSearch = new SemanticSearch(config.semanticSearch);
     await semanticSearch.initialize();
@@ -213,13 +212,13 @@ export class CLIInterface {
       language: options.language,
       chunkType: options.type,
       filePath: options.file,
-      minSimilarity: parseFloat(options.minSimilarity)
+      minSimilarity: parseFloat(options.minSimilarity),
     };
 
     const results = await semanticSearch.search(query, searchOptions);
-    
+
     this.displaySearchResults(results, options.format);
-    
+
     await semanticSearch.close();
   }
 
@@ -228,7 +227,7 @@ export class CLIInterface {
    */
   private async analyzeCommand(filePath: string | undefined, options: any): Promise<void> {
     const parser = new CodeParser();
-    
+
     if (filePath) {
       // Analyze specific file
       if (!existsSync(filePath)) {
@@ -238,7 +237,7 @@ export class CLIInterface {
 
       const content = readFileSync(filePath, 'utf-8');
       const language = parser.detectLanguage(filePath);
-      
+
       if (!language) {
         console.error(`Unsupported file type: ${filePath}`);
         return;
@@ -246,9 +245,9 @@ export class CLIInterface {
 
       console.log(`Analyzing file: ${filePath}`);
       console.log(`Language: ${language}`);
-      
+
       const chunks = await parser.parseFile(filePath, content);
-      
+
       this.displayAnalysisResults(chunks, options.format);
     } else {
       // Analyze project structure
@@ -262,21 +261,21 @@ export class CLIInterface {
    */
   private async indexCommand(indexPath: string, options: any): Promise<void> {
     console.log(`Indexing: ${indexPath}`);
-    
+
     const config = this.configManager.getConfig();
     const semanticSearch = new SemanticSearch(config.semanticSearch);
     await semanticSearch.initialize();
 
     try {
       const resolvedPath = path.resolve(indexPath);
-      
+
       if (!existsSync(resolvedPath)) {
         console.error(`Path not found: ${resolvedPath}`);
         return;
       }
 
       const stats = statSync(resolvedPath);
-      
+
       if (stats.isFile()) {
         // Index single file
         await this.indexFile(semanticSearch, resolvedPath);
@@ -302,7 +301,7 @@ export class CLIInterface {
    */
   private async indexFile(semanticSearch: SemanticSearch, filePath: string): Promise<void> {
     console.log(`Indexing file: ${filePath}`);
-    
+
     // Check if file is supported
     if (!this.isSupportedFile(filePath)) {
       console.log(`Skipping unsupported file: ${filePath}`);
@@ -311,7 +310,7 @@ export class CLIInterface {
 
     try {
       const content = readFileSync(filePath, 'utf-8');
-      
+
       // Check file size limit
       const config = this.configManager.getConfig();
       if (content.length > config.security.maxFileSize) {
@@ -330,14 +329,18 @@ export class CLIInterface {
   /**
    * Index a directory recursively
    */
-  private async indexDirectory(semanticSearch: SemanticSearch, dirPath: string, recursive: boolean): Promise<void> {
+  private async indexDirectory(
+    semanticSearch: SemanticSearch,
+    dirPath: string,
+    recursive: boolean
+  ): Promise<void> {
     console.log(`Indexing directory: ${dirPath} (recursive: ${recursive})`);
-    
+
     const files = this.getFilesInDirectory(dirPath, recursive);
     const supportedFiles = files.filter(file => this.isSupportedFile(file));
-    
+
     console.log(`Found ${files.length} total files, ${supportedFiles.length} supported files`);
-    
+
     if (supportedFiles.length === 0) {
       console.log('No supported files found to index');
       return;
@@ -346,34 +349,36 @@ export class CLIInterface {
     // Index files in batches to avoid memory issues
     const batchSize = 50;
     let processed = 0;
-    
+
     for (let i = 0; i < supportedFiles.length; i += batchSize) {
       const batch = supportedFiles.slice(i, i + batchSize);
       const batchNumber = Math.floor(i / batchSize) + 1;
       const totalBatches = Math.ceil(supportedFiles.length / batchSize);
-      
-      console.log(`Processing batch ${batchNumber}/${totalBatches} (${batch.length} files)`);
-      
-      await Promise.all(batch.map(async (filePath) => {
-        try {
-          const content = readFileSync(filePath, 'utf-8');
-          
-          // Check file size limit
-          const config = this.configManager.getConfig();
-          if (content.length > config.security.maxFileSize) {
-            console.warn(`File too large, skipping: ${filePath}`);
-            return;
-          }
 
-          await semanticSearch.indexFile(filePath, content);
-          processed++;
-          console.log(`✓ ${processed}/${supportedFiles.length}: ${filePath}`);
-        } catch (error) {
-          console.error(`✗ Failed to index file ${filePath}:`, error);
-        }
-      }));
+      console.log(`Processing batch ${batchNumber}/${totalBatches} (${batch.length} files)`);
+
+      await Promise.all(
+        batch.map(async filePath => {
+          try {
+            const content = readFileSync(filePath, 'utf-8');
+
+            // Check file size limit
+            const config = this.configManager.getConfig();
+            if (content.length > config.security.maxFileSize) {
+              console.warn(`File too large, skipping: ${filePath}`);
+              return;
+            }
+
+            await semanticSearch.indexFile(filePath, content);
+            processed++;
+            console.log(`✓ ${processed}/${supportedFiles.length}: ${filePath}`);
+          } catch (error) {
+            console.error(`✗ Failed to index file ${filePath}:`, error);
+          }
+        })
+      );
     }
-    
+
     console.log(`Indexing completed: ${processed}/${supportedFiles.length} files processed`);
   }
 
@@ -382,14 +387,14 @@ export class CLIInterface {
    */
   private getFilesInDirectory(dirPath: string, recursive: boolean): string[] {
     const files: string[] = [];
-    
+
     try {
       const entries = readdirSync(dirPath);
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry);
         const stats = statSync(fullPath);
-        
+
         if (stats.isFile()) {
           files.push(fullPath);
         } else if (stats.isDirectory() && recursive) {
@@ -401,7 +406,7 @@ export class CLIInterface {
     } catch (error) {
       console.error(`Error reading directory ${dirPath}:`, error);
     }
-    
+
     return files;
   }
 
@@ -410,10 +415,25 @@ export class CLIInterface {
    */
   private isSupportedFile(filePath: string): boolean {
     const supportedExtensions = [
-      '.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.cpp', '.c', '.h',
-      '.cs', '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala'
+      '.js',
+      '.jsx',
+      '.ts',
+      '.tsx',
+      '.py',
+      '.java',
+      '.cpp',
+      '.c',
+      '.h',
+      '.cs',
+      '.php',
+      '.rb',
+      '.go',
+      '.rs',
+      '.swift',
+      '.kt',
+      '.scala',
     ];
-    
+
     const ext = path.extname(filePath).toLowerCase();
     return supportedExtensions.includes(ext);
   }
@@ -462,17 +482,23 @@ export class CLIInterface {
     } else if (format === 'table') {
       console.log(`\nSearch Results (${results.resultCount} found):`);
       console.log('='.repeat(60));
-      
+
       results.results.forEach((result, index) => {
-        console.log(`${index + 1}. ${result.type} | ${result.filePath}:${result.lineStart}-${result.lineEnd}`);
+        console.log(
+          `${index + 1}. ${result.type} | ${result.filePath}:${result.lineStart}-${result.lineEnd}`
+        );
         console.log(`   Similarity: ${result.similarity.toFixed(4)}`);
-        console.log(`   Content: ${result.content.substring(0, 100)}${result.content.length > 100 ? '...' : ''}`);
+        console.log(
+          `   Content: ${result.content.substring(0, 100)}${result.content.length > 100 ? '...' : ''}`
+        );
         console.log('');
       });
     } else {
       // plain format
-      results.results.forEach((result) => {
-        console.log(`${result.filePath}:${result.lineStart}-${result.lineEnd} | ${result.type} | ${result.content}`);
+      results.results.forEach(result => {
+        console.log(
+          `${result.filePath}:${result.lineStart}-${result.lineEnd} | ${result.type} | ${result.content}`
+        );
       });
     }
   }
@@ -484,9 +510,9 @@ export class CLIInterface {
     if (format === 'json') {
       console.log(JSON.stringify(chunks, null, 2));
     } else if (format === 'tree') {
-      console.log(`\nCode Structure Analysis:`);
+      console.log('\nCode Structure Analysis:');
       console.log('='.repeat(40));
-      
+
       chunks.forEach((chunk, index) => {
         console.log(`${index + 1}. ${chunk.type}: ${chunk.name}`);
         console.log(`   Lines: ${chunk.startLine}-${chunk.endLine}`);
@@ -503,7 +529,7 @@ export class CLIInterface {
       });
     } else {
       // plain format
-      chunks.forEach((chunk) => {
+      chunks.forEach(chunk => {
         console.log(`${chunk.type}: ${chunk.name} (${chunk.startLine}-${chunk.endLine})`);
       });
     }
@@ -515,7 +541,7 @@ export class CLIInterface {
   private async statsCommand(options: any): Promise<void> {
     console.log('System Statistics:');
     console.log('==================');
-    
+
     try {
       const config = this.configManager.getConfig();
       const vectorStore = new ChromaVectorStore(
@@ -524,17 +550,17 @@ export class CLIInterface {
         config.vectorStore.port || 8000,
         config.vectorStore.authToken || 'test-token'
       );
-      
+
       await vectorStore.initialize();
       const stats = await vectorStore.getCollectionStats();
-      
+
       if (options.format === 'json') {
         console.log(JSON.stringify(stats, null, 2));
       } else {
         console.log(`Vector Count: ${stats.count}`);
         console.log(`Dimension: ${stats.dimension || 'unknown'}`);
       }
-      
+
       await vectorStore.close();
     } catch (error) {
       console.error('Failed to get statistics:', error);
@@ -546,7 +572,7 @@ export class CLIInterface {
    */
   private async clearCommand(options: any): Promise<void> {
     console.log('Clearing data...');
-    
+
     try {
       const config = this.configManager.getConfig();
       const vectorStore = new ChromaVectorStore(
@@ -555,18 +581,18 @@ export class CLIInterface {
         config.vectorStore.port || 8000,
         config.vectorStore.authToken || 'test-token'
       );
-      
+
       await vectorStore.initialize();
-      
+
       if (options.all || options.vectors) {
         await vectorStore.clear();
         console.log('Vector store cleared');
       }
-      
+
       if (options.all || options.cache) {
         console.log('Embedding cache cleared');
       }
-      
+
       await vectorStore.close();
     } catch (error) {
       console.error('Failed to clear data:', error);
@@ -583,45 +609,47 @@ export class CLIInterface {
           console.error('Please specify a file to parse');
           return;
         }
-        
+
         if (!existsSync(file)) {
           console.error(`File not found: ${file}`);
           return;
         }
-        
+
         console.log(`Parsing file: ${file}`);
         const parser = new CodeParser();
         const content = readFileSync(file, 'utf-8');
         const language = parser.detectLanguage(file);
-        
+
         if (!language) {
           console.error(`Unsupported file type: ${file}`);
           return;
         }
-        
+
         console.log(`Language: ${language}`);
         const chunks = await parser.parseFile(file, content);
         console.log(`Found ${chunks.length} code chunks:`);
-        
+
         chunks.forEach((chunk, index) => {
-          console.log(`  ${index + 1}. ${chunk.type}: ${chunk.name} (${chunk.startLine}-${chunk.endLine})`);
+          console.log(
+            `  ${index + 1}. ${chunk.type}: ${chunk.name} (${chunk.startLine}-${chunk.endLine})`
+          );
         });
         break;
-      
+
       case 'embed':
         if (!file) {
           console.error('Please specify a file to embed');
           return;
         }
-        
+
         console.log(`Generating embeddings for: ${file}`);
         const embeddingService = new EmbeddingService();
         await embeddingService.initialize();
-        
+
         console.log('Embedding debug implementation pending...');
-        
+
         break;
-      
+
       case 'test-connection':
         console.log('Testing connections...');
         try {
@@ -632,7 +660,7 @@ export class CLIInterface {
             config.vectorStore.port || 8000,
             config.vectorStore.authToken || 'test-token'
           );
-          
+
           await vectorStore.initialize();
           const stats = await vectorStore.getCollectionStats();
           console.log(`✓ ChromaDB connection successful (${stats.count} vectors)`);
@@ -641,7 +669,7 @@ export class CLIInterface {
           console.error('✗ ChromaDB connection failed:', error);
         }
         break;
-      
+
       default:
         console.error(`Unknown debug action: ${action}`);
         console.log('Available actions: parse, embed, test-connection');
@@ -687,7 +715,7 @@ _mcp_context_engine_completion() {
 }
 
 complete -F _mcp_context_engine_completion mcp-context-engine`;
-      
+
       case 'zsh':
         return `# zsh completion for mcp-context-engine
 #compdef mcp-context-engine
@@ -710,7 +738,7 @@ _mcp_context_engine() {
 }
 
 compdef _mcp_context_engine mcp-context-engine`;
-      
+
       case 'fish':
         return `# fish completion for mcp-context-engine
 complete -c mcp-context-engine -f
@@ -736,7 +764,7 @@ complete -c mcp-context-engine -n "__fish_seen_subcommand_from config" -a "reset
 complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "parse" -d "Parse a file"
 complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "embed" -d "Generate embeddings for a file"
 complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "test-connection" -d "Test connections to services"`;
-      
+
       default:
         return `# Generic completion for ${shell}
 # Add your completion rules here`;
@@ -744,4 +772,3 @@ complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "test-c
   }
 }
 export default CLIInterface;
-

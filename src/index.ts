@@ -43,7 +43,7 @@ export class ContextEngine {
   constructor(options: ContextEngineOptions) {
     this.options = options;
     this.configManager = new ConfigManager(options.configPath);
-    
+
     // Configure logging based on debug mode
     if (options.debug) {
       this.logger.setLevel(LogLevel.DEBUG);
@@ -76,7 +76,7 @@ export class ContextEngine {
       this.fileWatcher = new FileWatcher({
         projectPath: this.options.projectPath,
         ignoreInitial: false,
-        persistent: true
+        persistent: true,
       });
 
       // Set up file watcher event handlers
@@ -105,30 +105,30 @@ export class ContextEngine {
   private setupFileWatcherHandlers(): void {
     if (!this.fileWatcher) return;
 
-    this.fileWatcher.on('fileAdded', async (event) => {
+    this.fileWatcher.on('fileAdded', async event => {
       this.logger.info(`[FILE ADDED] ${event.filePath}`);
       await this.handleFileAdded(event.filePath);
     });
 
-    this.fileWatcher.on('fileChanged', async (event) => {
+    this.fileWatcher.on('fileChanged', async event => {
       this.logger.info(`[FILE CHANGED] ${event.filePath}`);
       await this.handleFileChanged(event.filePath);
     });
 
-    this.fileWatcher.on('fileRemoved', async (event) => {
+    this.fileWatcher.on('fileRemoved', async event => {
       this.logger.info(`[FILE REMOVED] ${event.filePath}`);
       await this.handleFileRemoved(event.filePath);
     });
 
-    this.fileWatcher.on('directoryAdded', (event) => {
+    this.fileWatcher.on('directoryAdded', event => {
       this.logger.info(`[DIRECTORY ADDED] ${event.dirPath}`);
     });
 
-    this.fileWatcher.on('directoryRemoved', (event) => {
+    this.fileWatcher.on('directoryRemoved', event => {
       this.logger.info(`[DIRECTORY REMOVED] ${event.dirPath}`);
     });
 
-    this.fileWatcher.on('error', (error) => {
+    this.fileWatcher.on('error', error => {
       this.logger.error('[FILE WATCHER ERROR]', error);
     });
 
@@ -144,7 +144,7 @@ export class ContextEngine {
 
     try {
       this.logger.debug(`Processing new file: ${filePath}`);
-      
+
       // Check if file is supported based on extension
       if (!this.isSupportedFile(filePath)) {
         this.logger.debug(`Skipping unsupported file: ${filePath}`);
@@ -153,7 +153,7 @@ export class ContextEngine {
 
       // Read file content
       const content = readFileSync(filePath, 'utf-8');
-      
+
       // Check file size limit
       const config = this.configManager.getConfig();
       if (content.length > config.security.maxFileSize) {
@@ -175,7 +175,7 @@ export class ContextEngine {
 
     try {
       this.logger.debug(`Processing changed file: ${filePath}`);
-      
+
       // Check if file is supported
       if (!this.isSupportedFile(filePath)) {
         return;
@@ -183,7 +183,7 @@ export class ContextEngine {
 
       // Read updated content
       const content = readFileSync(filePath, 'utf-8');
-      
+
       // Check file size limit
       const config = this.configManager.getConfig();
       if (content.length > config.security.maxFileSize) {
@@ -205,12 +205,12 @@ export class ContextEngine {
 
     try {
       this.logger.debug(`Processing removed file: ${filePath}`);
-      
+
       // Remove from vector index
       await this.semanticSearch.handleFileChange({
         type: 'delete',
-        filePath: filePath,
-        language: 'unknown'
+        filePath,
+        language: 'unknown',
       });
       this.logger.info(`Successfully removed file from index: ${filePath}`);
     } catch (error) {
@@ -221,10 +221,25 @@ export class ContextEngine {
 
   private isSupportedFile(filePath: string): boolean {
     const supportedExtensions = [
-      '.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.cpp', '.c', '.h',
-      '.cs', '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala'
+      '.js',
+      '.jsx',
+      '.ts',
+      '.tsx',
+      '.py',
+      '.java',
+      '.cpp',
+      '.c',
+      '.h',
+      '.cs',
+      '.php',
+      '.rb',
+      '.go',
+      '.rs',
+      '.swift',
+      '.kt',
+      '.scala',
     ];
-    
+
     const ext = path.extname(filePath).toLowerCase();
     return supportedExtensions.includes(ext);
   }
@@ -234,28 +249,32 @@ export class ContextEngine {
 
     try {
       this.logger.info('Performing initial indexing of existing files...');
-      
+
       const watchedFiles = this.fileWatcher.getWatchedFiles();
       const supportedFiles = watchedFiles.filter(file => this.isSupportedFile(file));
-      
+
       this.logger.info(`Found ${supportedFiles.length} supported files to index`);
-      
+
       // Index files in batches to avoid memory issues
       const batchSize = 50;
       for (let i = 0; i < supportedFiles.length; i += batchSize) {
         const batch = supportedFiles.slice(i, i + batchSize);
-        this.logger.debug(`Indexing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(supportedFiles.length / batchSize)}`);
-        
-        await Promise.all(batch.map(async (filePath) => {
-          try {
-            const content = readFileSync(filePath, 'utf-8');
-            await this.semanticSearch!.indexFile(filePath, content);
-          } catch (error) {
-            this.logger.error(`Failed to index file ${filePath} during initial indexing:`, error);
-          }
-        }));
+        this.logger.debug(
+          `Indexing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(supportedFiles.length / batchSize)}`
+        );
+
+        await Promise.all(
+          batch.map(async filePath => {
+            try {
+              const content = readFileSync(filePath, 'utf-8');
+              await this.semanticSearch!.indexFile(filePath, content);
+            } catch (error) {
+              this.logger.error(`Failed to index file ${filePath} during initial indexing:`, error);
+            }
+          })
+        );
       }
-      
+
       this.logger.info('Initial indexing completed');
     } catch (error) {
       this.logger.error('Failed to perform initial indexing:', error);
@@ -309,7 +328,6 @@ export class ContextEngine {
 
     console.log('Press Ctrl+C to stop the context engine');
   }
-  
 
   /**
    * Get engine statistics
@@ -318,10 +336,9 @@ export class ContextEngine {
     return {
       isRunning: this.isRunning,
       fileWatcher: this.fileWatcher?.getStats() || null,
-      uptime: this.isRunning ? Date.now() - this.startTime : 0
+      uptime: this.isRunning ? Date.now() - this.startTime : 0,
     };
   }
-
 }
 
 // Export for module usage

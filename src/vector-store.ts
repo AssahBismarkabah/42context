@@ -1,4 +1,3 @@
-
 /**
  * Vector Store Service for persistent storage and similarity search of embeddings
  * Uses ChromaDB for local vector database operations
@@ -54,12 +53,12 @@ class VectorStore {
       collectionName: options.collectionName || 'code_embeddings',
       persistDirectory: options.persistDirectory || './.chroma_db',
       distanceMetric: options.distanceMetric || 'cosine',
-      embeddingDimension: options.embeddingDimension || 384
+      embeddingDimension: options.embeddingDimension || 384,
     };
 
     // Initialize ChromaDB client
     this.client = new ChromaClient({
-      path: this.options.persistDirectory
+      path: this.options.persistDirectory,
     });
   }
 
@@ -69,16 +68,18 @@ class VectorStore {
   async initialize(): Promise<void> {
     try {
       console.log(`Initializing vector store: ${this.options.collectionName}`);
-      
+
       // Check if collection exists
       const collections = await this.client.listCollections();
-      const collectionExists = collections.some((col: any) => col.name === this.options.collectionName);
-      
+      const collectionExists = collections.some(
+        (col: any) => col.name === this.options.collectionName
+      );
+
       if (collectionExists) {
         // Get existing collection
         this.collection = await this.client.getCollection({
           name: this.options.collectionName,
-          embeddingFunction: new SimpleEmbeddingFunction()
+          embeddingFunction: new SimpleEmbeddingFunction(),
         });
         console.log(`Using existing collection: ${this.options.collectionName}`);
       } else {
@@ -88,8 +89,8 @@ class VectorStore {
           embeddingFunction: new SimpleEmbeddingFunction(),
           metadata: {
             'hnsw:space': this.options.distanceMetric,
-            dimension: this.options.embeddingDimension
-          }
+            dimension: this.options.embeddingDimension,
+          },
         });
         console.log(`Created new collection: ${this.options.collectionName}`);
       }
@@ -126,7 +127,7 @@ class VectorStore {
         endLine: chunk.endLine,
         timestamp: chunk.timestamp,
         embeddingTimestamp: embedding.timestamp,
-        model: embedding.model
+        model: embedding.model,
       };
 
       // Store in ChromaDB
@@ -134,7 +135,7 @@ class VectorStore {
         ids: [embedding.chunkId],
         embeddings: [embedding.vector],
         metadatas: [metadata],
-        documents: [chunk.content.substring(0, 1000)] // Truncate content for storage
+        documents: [chunk.content.substring(0, 1000)], // Truncate content for storage
       });
 
       console.log(`Stored embedding for chunk: ${chunk.name} (${chunk.id})`);
@@ -172,7 +173,7 @@ class VectorStore {
 
         ids.push(embedding.chunkId);
         vectors.push(embedding.vector);
-        
+
         metadatas.push({
           chunkId: chunk.id,
           chunkType: chunk.type,
@@ -183,7 +184,7 @@ class VectorStore {
           endLine: chunk.endLine,
           timestamp: chunk.timestamp,
           embeddingTimestamp: embedding.timestamp,
-          model: embedding.model
+          model: embedding.model,
         });
 
         documents.push(chunk.content.substring(0, 1000));
@@ -194,7 +195,7 @@ class VectorStore {
         ids,
         embeddings: vectors,
         metadatas,
-        documents
+        documents,
       });
 
       console.log(`Stored ${embeddings.length} embeddings in vector store`);
@@ -236,12 +237,12 @@ class VectorStore {
         queryEmbeddings: [queryEmbedding],
         nResults: topK,
         where: Object.keys(where).length > 0 ? where : undefined,
-        include: [IncludeEnum.Metadatas, IncludeEnum.Documents, IncludeEnum.Distances]
+        include: [IncludeEnum.Metadatas, IncludeEnum.Documents, IncludeEnum.Distances],
       });
 
       // Convert to our format
       const searchResults: VectorSearchResult[] = [];
-      
+
       if (results.ids && results.ids[0]) {
         for (let i = 0; i < results.ids[0].length; i++) {
           const chunkId = results.ids[0][i];
@@ -275,26 +276,26 @@ class VectorStore {
                 type: chunkType,
                 name: chunkName,
                 content: document || '',
-                filePath: filePath,
-                language: language,
-                startLine: startLine,
-                endLine: endLine,
+                filePath,
+                language,
+                startLine,
+                endLine,
                 startColumn: 0,
                 endColumn: 0,
                 signature: undefined,
                 documentation: undefined,
                 dependencies: [],
                 metadata: undefined,
-                timestamp: timestamp
+                timestamp,
               },
               embedding: {
                 chunkId: chunkIdStr,
                 vector: [], // Vector not returned by default in query
                 dimension: this.options.embeddingDimension,
                 timestamp: embeddingTimestamp,
-                model: model
-              }
-            }
+                model,
+              },
+            },
           });
         }
       }
@@ -336,7 +337,7 @@ class VectorStore {
       documentation: undefined,
       dependencies: [],
       metadata: undefined,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     return this.searchSimilar(queryEmbedding.vector, topK, filter);
@@ -354,7 +355,7 @@ class VectorStore {
       const count = await this.collection.count();
       return {
         count,
-        dimension: this.options.embeddingDimension
+        dimension: this.options.embeddingDimension,
       };
     } catch (error) {
       console.error('Failed to get vector store stats:', error);
@@ -378,8 +379,8 @@ class VectorStore {
         embeddingFunction: new SimpleEmbeddingFunction(),
         metadata: {
           'hnsw:space': this.options.distanceMetric,
-          dimension: this.options.embeddingDimension
-        }
+          dimension: this.options.embeddingDimension,
+        },
       });
       console.log('Vector store cleared successfully');
     } catch (error) {

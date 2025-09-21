@@ -1,4 +1,3 @@
-
 import { readFileSync, existsSync } from 'fs';
 import { LogLevel } from './logger.js';
 
@@ -92,7 +91,7 @@ const DEFAULT_CONFIG: ContextEngineConfig = {
     modelName: 'Xenova/all-MiniLM-L6-v2',
     batchSize: 32,
     maxRetries: 3,
-    retryDelay: 1000
+    retryDelay: 1000,
   },
   vectorStore: {
     type: 'chroma',
@@ -102,7 +101,7 @@ const DEFAULT_CONFIG: ContextEngineConfig = {
     authToken: process.env.CHROMA_SERVER_AUTH_CREDENTIALS || 'test-token',
     embeddingDimension: 384,
     maxVectorsPerFile: 1000,
-    similarityThreshold: 0.7
+    similarityThreshold: 0.7,
   },
   fileWatcher: {
     ignored: [
@@ -116,7 +115,7 @@ const DEFAULT_CONFIG: ContextEngineConfig = {
       '**/coverage/**',
       '**/.env*',
       '**/package-lock.json',
-      '**/yarn.lock'
+      '**/yarn.lock',
     ],
     persistent: true,
     ignoreInitial: false,
@@ -124,44 +123,69 @@ const DEFAULT_CONFIG: ContextEngineConfig = {
     interval: 100,
     awaitWriteFinish: {
       stabilityThreshold: 2000,
-      pollInterval: 100
+      pollInterval: 100,
     },
-    maxFileSize: 10 * 1024 * 1024 // 10MB
+    maxFileSize: 10 * 1024 * 1024, // 10MB
   },
   parser: {
     maxFileSize: 5 * 1024 * 1024, // 5MB
     chunkSize: 1000,
     chunkOverlap: 200,
-    supportedLanguages: ['javascript', 'typescript', 'python', 'java', 'cpp', 'c', 'rust', 'go', 'ruby', 'php'],
+    supportedLanguages: [
+      'javascript',
+      'typescript',
+      'python',
+      'java',
+      'cpp',
+      'c',
+      'rust',
+      'go',
+      'ruby',
+      'php',
+    ],
     extractDocumentation: true,
-    extractDependencies: true
+    extractDependencies: true,
   },
   semanticSearch: {
     maxResults: 10,
     minSimilarity: 0.7,
     enableCaching: true,
-    cacheSize: 1000
+    cacheSize: 1000,
   },
   logging: {
     level: LogLevel.INFO,
     enableConsole: true,
     enableFile: false,
     maxFileSize: 10 * 1024 * 1024, // 10MB
-    maxFiles: 5
+    maxFiles: 5,
   },
   performance: {
     maxConcurrentOperations: 10,
     batchProcessingSize: 32,
     memoryLimit: 2048, // 2GB
     cpuLimit: 80, // 80%
-    enableResourceMonitoring: true
+    enableResourceMonitoring: true,
   },
   security: {
     enableSandbox: true,
-    allowedFileExtensions: ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.h', '.rs', '.go', '.rb', '.php'],
+    allowedFileExtensions: [
+      '.js',
+      '.ts',
+      '.jsx',
+      '.tsx',
+      '.py',
+      '.java',
+      '.cpp',
+      '.c',
+      '.h',
+      '.rs',
+      '.go',
+      '.rb',
+      '.php',
+    ],
     maxFileSize: 5 * 1024 * 1024, // 5MB
-    enableContentFiltering: true
-  }
+    enableContentFiltering: true,
+  },
 };
 
 export class ConfigManager {
@@ -290,11 +314,11 @@ export class ConfigManager {
     // Logging config
     if (env.DEV_CONTEXT_LOG_LEVEL) {
       const levelMap: Record<string, LogLevel> = {
-        'error': LogLevel.ERROR,
-        'warn': LogLevel.WARN,
-        'info': LogLevel.INFO,
-        'debug': LogLevel.DEBUG,
-        'trace': LogLevel.TRACE
+        error: LogLevel.ERROR,
+        warn: LogLevel.WARN,
+        info: LogLevel.INFO,
+        debug: LogLevel.DEBUG,
+        trace: LogLevel.TRACE,
       };
       config.logging.level = levelMap[env.DEV_CONTEXT_LOG_LEVEL.toLowerCase()] ?? LogLevel.INFO;
     }
@@ -305,7 +329,9 @@ export class ConfigManager {
 
     // Performance config
     if (env.DEV_CONTEXT_MAX_CONCURRENT_OPERATIONS) {
-      config.performance.maxConcurrentOperations = parseInt(env.DEV_CONTEXT_MAX_CONCURRENT_OPERATIONS);
+      config.performance.maxConcurrentOperations = parseInt(
+        env.DEV_CONTEXT_MAX_CONCURRENT_OPERATIONS
+      );
     }
     if (env.DEV_CONTEXT_MEMORY_LIMIT) {
       config.performance.memoryLimit = parseInt(env.DEV_CONTEXT_MEMORY_LIMIT);
@@ -355,7 +381,6 @@ export class ConfigManager {
     this.validateConfig(this.config);
   }
 }
-
 
 // Global config manager instance
 let globalConfigManager: ConfigManager | null = null;

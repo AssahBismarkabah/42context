@@ -1,9 +1,7 @@
-
 <div align="center">
   <h1>MCP Local Context Engine</h1>
   <p><strong>Semantic Code Search and Analysis Platform</strong></p>
 </div>
-
 
 <div align="center" style="line-height:1">
   <a href="https://github.com/AssahBismarkabah/42context"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-Repository-blue?logo=github"/></a>
@@ -25,6 +23,7 @@
 MCP Local Context Engine is a comprehensive semantic code search and analysis platform that leverages the Model Context Protocol (MCP) for intelligent code understanding. Built with TypeScript and powered by vector databases, it provides advanced code search capabilities across multiple programming languages using AI-powered embeddings.
 
 ### Key Features
+
 - **Multi-Language Support**: Comprehensive parsing for JavaScript, TypeScript, Python, Java, C/C++, Rust, Go, Ruby, and PHP
 - **Semantic Code Search**: Natural language queries with vector similarity matching
 - **Real-time Indexing**: File system watching with automatic re-indexing
@@ -33,29 +32,32 @@ MCP Local Context Engine is a comprehensive semantic code search and analysis pl
 - **Comprehensive CLI**: Full-featured command-line interface with shell completions
 
 ### Architecture Overview
+
 The engine combines multiple advanced technologies to provide a unified platform for code analysis and search. It uses Tree-sitter for multi-language parsing, Transformers.js for AI embeddings, and ChromaDB for efficient vector storage and retrieval.
 
 ## 2. Technical Specifications
 
 <div align="center">
 
-| | |
-|:---:|:---:|
-| **Core Language** | TypeScript |
-| **Runtime** | Node.js 18+ |
-| **Vector Database** | ChromaDB |
-| **Embedding Model** | Xenova/all-MiniLM-L6-v2 |
-| **Embedding Dimension** | 384 |
-| **Parsing Engine** | Tree-sitter |
-| **Supported Languages** | 10+ |
-| **CLI Framework** | Commander.js |
-| **Configuration** | JSON-based |
-| **Logging** | Winston |
+|                         |                         |
+| :---------------------: | :---------------------: |
+|    **Core Language**    |       TypeScript        |
+|       **Runtime**       |       Node.js 18+       |
+|   **Vector Database**   |        ChromaDB         |
+|   **Embedding Model**   | Xenova/all-MiniLM-L6-v2 |
+| **Embedding Dimension** |           384           |
+|   **Parsing Engine**    |       Tree-sitter       |
+| **Supported Languages** |           10+           |
+|    **CLI Framework**    |      Commander.js       |
+|    **Configuration**    |       JSON-based        |
+|       **Logging**       |         Winston         |
+
 </div>
 
 ## 3. Performance Metrics
 
 ### Code Analysis Performance
+
 <div align="center">
 <table>
 <thead>
@@ -96,6 +98,7 @@ The engine combines multiple advanced technologies to provide a unified platform
 </div>
 
 ### Language Support Matrix
+
 <div align="center">
 <table>
 <thead>
@@ -178,11 +181,13 @@ The engine combines multiple advanced technologies to provide a unified platform
 ## 4. Deployment
 
 ### Prerequisites
+
 - Node.js 18 or higher
 - Docker and Docker Compose
 - Git
 
 ### Installation
+
 ```bash
 # Clone repository
 git clone https://github.com/AssahBismarkabah/42context.git
@@ -199,9 +204,11 @@ npm run build
 ```
 
 ### Configuration
+
 The engine provides a **comprehensive three-tier configuration system** with automatic validation and flexible customization options.
 
 #### Configuration Hierarchy (Priority Order)
+
 1. **Environment Variables** (highest priority) - `DEV_CONTEXT_*` prefix
 2. **JSON Configuration File** - Loaded via `--config` flag
 3. **Default Values** (lowest priority) - Optimized for immediate use
@@ -209,12 +216,14 @@ The engine provides a **comprehensive three-tier configuration system** with aut
 #### Configuration Methods
 
 **1. JSON Configuration File**
+
 ```bash
 # Create custom configuration file
 node dist/src/cli-main.js --config my-config.json search "authentication"
 ```
 
 **Example custom configuration** (`test-config.json`):
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -252,6 +261,7 @@ node dist/src/cli-main.js --config my-config.json search "authentication"
 ```
 
 **2. Environment Variables**
+
 ```bash
 # Set embedding batch size
 export DEV_CONTEXT_EMBEDDING_BATCH_SIZE=128
@@ -267,6 +277,7 @@ node dist/src/cli-main.js search "authentication"
 ```
 
 **3. CLI Configuration Commands**
+
 ```bash
 # View all settings
 node dist/src/cli-main.js config list
@@ -283,19 +294,16 @@ node dist/src/cli-main.js config get embedding.batchSize
 
 #### Key Configuration Sections
 
-| Section | Purpose | Key Settings |
-|---------|---------|--------------|
-| **vectorStore** | ChromaDB connection and vector storage | host, port, collectionName, embeddingDimension |
-| **embedding** | AI model settings for code embeddings | modelName, batchSize, maxRetries, retryDelay |
-| **parser** | Code analysis and chunking | maxFileSize, chunkSize, chunkOverlap, supportedLanguages |
-| **fileWatcher** | Real-time file monitoring | ignored patterns, maxFileSize, polling settings |
-| **semanticSearch** | Search behavior tuning | maxResults, minSimilarity, enableCaching |
-| **performance** | Resource usage limits | maxConcurrentOperations, memoryLimit, cpuLimit |
-| **security** | File access and content filtering | allowedFileExtensions, enableSandbox, maxFileSize |
-| **logging** | Debug and monitoring output | level, enableConsole, enableFile |
-
-
-
+| Section            | Purpose                                | Key Settings                                             |
+| ------------------ | -------------------------------------- | -------------------------------------------------------- |
+| **vectorStore**    | ChromaDB connection and vector storage | host, port, collectionName, embeddingDimension           |
+| **embedding**      | AI model settings for code embeddings  | modelName, batchSize, maxRetries, retryDelay             |
+| **parser**         | Code analysis and chunking             | maxFileSize, chunkSize, chunkOverlap, supportedLanguages |
+| **fileWatcher**    | Real-time file monitoring              | ignored patterns, maxFileSize, polling settings          |
+| **semanticSearch** | Search behavior tuning                 | maxResults, minSimilarity, enableCaching                 |
+| **performance**    | Resource usage limits                  | maxConcurrentOperations, memoryLimit, cpuLimit           |
+| **security**       | File access and content filtering      | allowedFileExtensions, enableSandbox, maxFileSize        |
+| **logging**        | Debug and monitoring output            | level, enableConsole, enableFile                         |
 
 ## 5. Usage
 
@@ -356,12 +364,67 @@ node dist/src/cli-main.js stats --detailed
 node dist/src/cli-main.js debug test-connection
 ```
 
+## 6. Development & CI/CD
 
-## 6. License
+### Continuous Integration
+
+The project uses GitHub Actions for comprehensive CI/CD automation:
+
+#### 🔄 CI Pipeline
+
+- **Build & Test**: Automated testing with ChromaDB service
+- **Code Quality**: ESLint, Prettier, TypeScript checks
+- **Security**: npm audit, vulnerability scanning
+- **Docker**: Container building and testing
+- **Integration**: CLI functionality testing
+
+#### 🔍 Code Quality Pipeline
+
+- **Static Analysis**: CodeQL analysis
+- **Security Scanning**: Dependency review, secret detection
+- **Performance**: Build and CLI performance testing
+- **License Compliance**: Dependency license checking
+
+#### 🚀 Release Pipeline
+
+- **Automated Releases**: Tag-based and manual releases
+- **Multi-platform**: Cross-platform binary packages
+- **Container Registry**: Docker images to GitHub Container Registry
+- **NPM Publishing**: Automated package publishing
+
+### Quick Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Run quality checks
+npm run lint
+npm run format:check
+npm run type-check
+
+# Run tests
+npm test
+
+# Build project
+npm run build
+
+# Start development
+npm run dev
+```
+
+### CI/CD Documentation
+
+For detailed CI/CD setup and usage instructions, see:
+
+- [CI/CD Setup Guide](CI_CD_SETUP.md) - Quick start and configuration
+- [CI/CD Documentation](CI_CD_DOCUMENTATION.md) - Technical details
+
+## 7. License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## 7. Citation
+## 8. Citation
 
 If you use MCP Local Context Engine in your research, please cite:
 

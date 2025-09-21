@@ -43,7 +43,11 @@ export interface VectorSearchResult {
 export interface VectorStore {
   initialize(): Promise<void>;
   addVectors(vectors: CodeVector[]): Promise<void>;
-  searchSimilar(queryVector: number[], topK?: number, language?: string): Promise<VectorSearchResult[]>;
+  searchSimilar(
+    queryVector: number[],
+    topK?: number,
+    language?: string
+  ): Promise<VectorSearchResult[]>;
   deleteVectors(filePath: string): Promise<void>;
   updateVectors(vectors: CodeVector[]): Promise<void>;
   getCollectionStats(): Promise<{ count: number; dimension?: number }>;

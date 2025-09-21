@@ -50,7 +50,7 @@ export class EmbeddingService {
       maxSequenceLength: options.maxSequenceLength || 512,
       batchSize: options.batchSize || 32,
       cacheSize: options.cacheSize || 10000,
-      device: options.device || 'cpu'
+      device: options.device || 'cpu',
     };
 
     this.embeddingCache = new Map();
@@ -62,14 +62,11 @@ export class EmbeddingService {
   async initialize(): Promise<void> {
     try {
       console.log(`Loading embedding model: ${this.options.modelName}`);
-      
+
       // Dynamic import for Transformers.js
       const { pipeline } = await import('@xenova/transformers');
-      
-      this.model = await pipeline(
-        'feature-extraction',
-        this.options.modelName
-      );
+
+      this.model = await pipeline('feature-extraction', this.options.modelName);
 
       this.isModelLoaded = true;
       console.log(' Embedding model loaded successfully');
@@ -96,11 +93,11 @@ export class EmbeddingService {
     try {
       // Prepare text for embedding
       const text = this.prepareChunkText(chunk);
-      
+
       // Generate embedding
       const output = await this.model(text, {
         pooling: 'mean',
-        normalize: true
+        normalize: true,
       });
 
       // Convert to array and flatten
@@ -111,7 +108,7 @@ export class EmbeddingService {
         vector,
         dimension: vector.length,
         timestamp: Date.now(),
-        model: this.options.modelName
+        model: this.options.modelName,
       };
 
       // Cache the result
@@ -135,7 +132,9 @@ export class EmbeddingService {
 
     for (let i = 0; i < chunks.length; i += batchSize) {
       const batch = chunks.slice(i, i + batchSize);
-      console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(chunks.length / batchSize)}`);
+      console.log(
+        `Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(chunks.length / batchSize)}`
+      );
 
       const batchPromises = batch.map(chunk => this.generateEmbedding(chunk));
       const batchResults = await Promise.all(batchPromises);
@@ -157,13 +156,13 @@ export class EmbeddingService {
       // Generate embedding
       const output = await this.model(text, {
         pooling: 'mean',
-        normalize: true
+        normalize: true,
       });
 
       // Convert to array and flatten
       return Array.from(output.data as number[]);
     } catch (error) {
-      console.error(`Failed to generate embedding for text:`, error);
+      console.error('Failed to generate embedding for text:', error);
       throw new Error(`Text embedding generation failed: ${error}`);
     }
   }
@@ -230,7 +229,7 @@ export class EmbeddingService {
       cacheSize: this.embeddingCache.size,
       maxCacheSize: this.options.cacheSize,
       hitRate: 0, // Could be implemented with access tracking
-      modelName: this.options.modelName
+      modelName: this.options.modelName,
     };
   }
 
@@ -273,7 +272,7 @@ export class EmbeddingService {
   ): Promise<Array<{ embedding: EmbeddingResult; similarity: number }>> {
     const similarities = candidateEmbeddings.map(embedding => ({
       embedding,
-      similarity: this.calculateSimilarity(queryEmbedding.vector, embedding.vector)
+      similarity: this.calculateSimilarity(queryEmbedding.vector, embedding.vector),
     }));
 
     // Sort by similarity (descending)
@@ -303,7 +302,7 @@ export class EmbeddingService {
       name: this.options.modelName,
       dimension: this.isModelLoaded ? 384 : null, // all-MiniLM-L6-v2 outputs 384 dimensions
       maxSequenceLength: this.options.maxSequenceLength,
-      device: this.options.device
+      device: this.options.device,
     };
   }
 

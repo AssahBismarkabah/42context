@@ -24,14 +24,6 @@
     "allowSyntheticDefaultImports": true,
     "rewriteRelativeImportExtensions": true
   },
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "debug-test",
-    "test-files"
-  ]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist", "debug-test", "test-files"]
 }
