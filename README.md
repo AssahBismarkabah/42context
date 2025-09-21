@@ -357,7 +357,7 @@ node dist/src/cli-main.js debug test-connection
 ```
 
 
-## 10. License
+## 6. License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
@@ -375,6 +375,6 @@ If you use MCP Local Context Engine in your research, please cite:
 }
 ```
 
-## 12. Contact
+## 7. Contact
 
 For questions, issues, or contributions, please visit our [GitHub repository](https://github.com/your-org/mcp-local-context-engine) or open an issue.
