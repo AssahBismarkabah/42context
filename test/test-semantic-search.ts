@@ -22,7 +22,7 @@ const testChunks: CodeChunk[] = [
     documentation: 'Calculates the sum of two numbers',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk2',
@@ -39,7 +39,7 @@ const testChunks: CodeChunk[] = [
     documentation: 'Calculates the product of two numbers',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk3',
@@ -56,13 +56,14 @@ const testChunks: CodeChunk[] = [
     documentation: 'A simple calculator class',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk4',
     type: 'function',
     name: 'authenticateUser',
-    content: 'function authenticateUser(username, password) { if (!username || !password) return false; return validateCredentials(username, password); }',
+    content:
+      'function authenticateUser(username, password) { if (!username || !password) return false; return validateCredentials(username, password); }',
     filePath: '/test/auth.js',
     language: 'javascript',
     startLine: 1,
@@ -73,13 +74,14 @@ const testChunks: CodeChunk[] = [
     documentation: 'Authenticates user with username and password',
     dependencies: ['validateCredentials'],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk5',
     type: 'function',
     name: 'validateInput',
-    content: 'function validateInput(input) { if (!input || input.length === 0) return false; return input.length > 3; }',
+    content:
+      'function validateInput(input) { if (!input || input.length === 0) return false; return input.length > 3; }',
     filePath: '/test/validation.js',
     language: 'javascript',
     startLine: 1,
@@ -90,8 +92,8 @@ const testChunks: CodeChunk[] = [
     documentation: 'Validates input data',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
-  }
+    timestamp: Date.now(),
+  },
 ];
 
 async function testSemanticSearch() {
@@ -102,7 +104,7 @@ async function testSemanticSearch() {
     const semanticSearch = createSemanticSearchService({
       embeddingModel: 'Xenova/all-MiniLM-L6-v2',
       minSimilarity: 0.2,
-      maxResults: 5
+      maxResults: 5,
     });
 
     console.log(' Semantic search service created');
@@ -123,11 +125,13 @@ async function testSemanticSearch() {
     // Test 1: Basic semantic search
     console.log('\n Test 1: Basic semantic search');
     const searchResults1 = await semanticSearch.search('calculate sum of numbers', {
-      topK: 3
+      topK: 3,
     });
     console.log(` Found ${searchResults1.resultCount} results:`);
     searchResults1.results.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
       console.log(`      File: ${result.filePath}`);
     });
 
@@ -135,11 +139,13 @@ async function testSemanticSearch() {
     console.log('\n Test 2: Filtered search by language');
     const searchResults2 = await semanticSearch.search('authentication', {
       language: 'javascript',
-      topK: 2
+      topK: 2,
     });
     console.log(` Found ${searchResults2.resultCount} results:`);
     searchResults2.results.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
       console.log(`      File: ${result.filePath}`);
     });
 
@@ -147,23 +153,30 @@ async function testSemanticSearch() {
     console.log('\n Test 3: Search with higher threshold');
     const searchResults3 = await semanticSearch.search('validation', {
       minSimilarity: 0.3,
-      topK: 3
+      topK: 3,
     });
     console.log(` Found ${searchResults3.resultCount} results with threshold 0.3:`);
     searchResults3.results.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
       console.log(`      File: ${result.filePath}`);
     });
 
     // Test 4: Find similar patterns
     console.log('\n Test 4: Find similar patterns');
-    const patternResults = await semanticSearch.search('function validateUser(input) { if (!input) return false; }', {
-      language: 'javascript',
-      topK: 3
-    });
+    const patternResults = await semanticSearch.search(
+      'function validateUser(input) { if (!input) return false; }',
+      {
+        language: 'javascript',
+        topK: 3,
+      }
+    );
     console.log(` Found ${patternResults.resultCount} similar patterns:`);
     patternResults.results.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
       console.log(`      File: ${result.filePath}`);
     });
 
@@ -177,16 +190,17 @@ async function testSemanticSearch() {
     const complexResults = await semanticSearch.search('calculate math operations', {
       language: 'javascript',
       chunkType: 'function',
-      topK: 2
+      topK: 2,
     });
     console.log(` Found ${complexResults.resultCount} complex filtered results:`);
     complexResults.results.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
       console.log(`      File: ${result.filePath}`);
     });
 
     console.log('\n All semantic search tests completed successfully!');
-
   } catch (error) {
     console.error(' Semantic search test failed:', error);
     process.exit(1);

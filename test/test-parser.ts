@@ -4,14 +4,14 @@ import { join } from 'path';
 
 async function testParser() {
   console.log(' Testing Tree-sitter Code Parser...\n');
-  
+
   // Create test directory
   const testDir = join(__dirname, 'parser-test');
   try {
     rmSync(testDir, { recursive: true, force: true });
   } catch {}
   mkdirSync(testDir, { recursive: true });
-  
+
   // Create test files for different languages
   const testFiles = {
     'test.ts': `
@@ -85,36 +85,38 @@ class DataProcessor:
   
   def process(self):
     return [x * 2 for x in self.data]
-`
+`,
   };
-  
+
   // Write test files
   for (const [filename, content] of Object.entries(testFiles)) {
     writeFileSync(join(testDir, filename), content);
   }
-  
+
   // Initialize parser
   const parser = new CodeParser({
-    languages: ['typescript', 'javascript', 'java', 'python']
+    languages: ['typescript', 'javascript', 'java', 'python'],
   });
-  
+
   console.log(' Parsing test files...\n');
-  
+
   // Parse each file
   for (const [filename, content] of Object.entries(testFiles)) {
     console.log(` Parsing ${filename}:`);
     const filePath = join(testDir, filename);
     const language = parser.detectLanguage(filePath);
-    
+
     if (language) {
       console.log(`   Language detected: ${language}`);
-      
+
       try {
         const chunks = await parser.parseFile(filePath, content);
         console.log(`   Found ${chunks.length} code chunks:`);
-        
+
         chunks.forEach((chunk: any, index: number) => {
-          console.log(`   ${index + 1}. ${chunk.type}: ${chunk.name} (${chunk.startLine + 1}-${chunk.endLine + 1})`);
+          console.log(
+            `   ${index + 1}. ${chunk.type}: ${chunk.name} (${chunk.startLine + 1}-${chunk.endLine + 1})`
+          );
           if (chunk.signature) {
             console.log(`      Signature: ${chunk.signature}`);
           }
@@ -123,17 +125,17 @@ class DataProcessor:
         console.log(`    Error parsing: ${error instanceof Error ? error.message : String(error)}`);
       }
     } else {
-      console.log(`    Language not supported`);
+      console.log('    Language not supported');
     }
     console.log('');
   }
-  
+
   // Test incremental parsing
   console.log('🔄 Testing incremental parsing...\n');
-  
-  const modifiedContent = testFiles['test.ts'] + '\n// Added comment\nfunction newFunction() { return 42; }';
+
+  const modifiedContent = `${testFiles['test.ts']}\n// Added comment\nfunction newFunction() { return 42; }`;
   writeFileSync(join(testDir, 'test.ts'), modifiedContent);
-  
+
   try {
     const chunks = await parser.parseFile(join(testDir, 'test.ts'), modifiedContent);
     console.log(`   After modification: ${chunks.length} chunks found`);
@@ -142,14 +144,16 @@ class DataProcessor:
       console.log(`    New function detected: ${newFunction.name}`);
     }
   } catch (error) {
-    console.log(`    Error in incremental parsing: ${error instanceof Error ? error.message : String(error)}`);
+    console.log(
+      `    Error in incremental parsing: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
-  
+
   // Cleanup
   try {
     rmSync(testDir, { recursive: true, force: true });
   } catch {}
-  
+
   console.log('\n Parser test completed!');
 }
 

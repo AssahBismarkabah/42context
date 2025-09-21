@@ -23,7 +23,7 @@ const testChunks: CodeChunk[] = [
     documentation: 'Calculates the sum of two numbers',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk2',
@@ -40,7 +40,7 @@ const testChunks: CodeChunk[] = [
     documentation: 'Calculates the product of two numbers',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk3',
@@ -57,8 +57,8 @@ const testChunks: CodeChunk[] = [
     documentation: 'A simple calculator class',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
-  }
+    timestamp: Date.now(),
+  },
 ];
 
 async function testVectorStore() {
@@ -68,7 +68,7 @@ async function testVectorStore() {
     // Create embedding service
     const embeddingService = new EmbeddingService({
       modelName: 'Xenova/all-MiniLM-L6-v2',
-      cacheSize: 1000
+      cacheSize: 1000,
     });
 
     // Create vector store - connect to Docker ChromaDB
@@ -94,7 +94,7 @@ async function testVectorStore() {
     console.log('\n Generating embeddings for test chunks...');
     const embeddings = await embeddingService.generateBatchEmbeddings({
       chunks: testChunks,
-      batchSize: 2
+      batchSize: 2,
     });
     console.log(` Generated ${embeddings.length} embeddings`);
 
@@ -108,7 +108,7 @@ async function testVectorStore() {
       type: testChunks[index].type,
       lineStart: testChunks[index].startLine,
       lineEnd: testChunks[index].endLine,
-      timestamp: testChunks[index].timestamp
+      timestamp: testChunks[index].timestamp,
     }));
 
     // Store embeddings in vector store
@@ -118,25 +118,22 @@ async function testVectorStore() {
 
     // Test vector search
     console.log('\n Testing vector search...');
-    const searchResults = await vectorStore.searchSimilar(
-      embeddings[0].vector,
-      3
-    );
+    const searchResults = await vectorStore.searchSimilar(embeddings[0].vector, 3);
     console.log(` Found ${searchResults.length} similar vectors:`);
     searchResults.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.type} ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.type} ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
     });
 
     // Test filtered search
     console.log('\n Testing filtered vector search...');
-    const filteredResults = await vectorStore.searchSimilar(
-      embeddings[0].vector,
-      2,
-      'javascript'
-    );
+    const filteredResults = await vectorStore.searchSimilar(embeddings[0].vector, 2, 'javascript');
     console.log(` Found ${filteredResults.length} filtered similar vectors:`);
     filteredResults.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.type} ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.type} ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
     });
 
     // Test text-based search
@@ -156,16 +153,15 @@ async function testVectorStore() {
       documentation: 'Query chunk for testing',
       dependencies: [],
       metadata: undefined,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     const queryEmbedding = await embeddingService.generateEmbedding(queryChunk);
-    const textResults = await vectorStore.searchSimilar(
-      queryEmbedding.vector,
-      2
-    );
+    const textResults = await vectorStore.searchSimilar(queryEmbedding.vector, 2);
     console.log(` Found ${textResults.length} text-based similar vectors:`);
     textResults.forEach((result: any, index: number) => {
-      console.log(`   ${index + 1}. ${result.type} ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`);
+      console.log(
+        `   ${index + 1}. ${result.type} ${result.content.substring(0, 50)}... (similarity: ${result.similarity.toFixed(4)})`
+      );
     });
 
     // Test vector store stats
@@ -185,7 +181,6 @@ async function testVectorStore() {
     console.log(' Vector store closed successfully');
 
     console.log('\n All vector store tests completed successfully!');
-
   } catch (error) {
     console.error(' Vector store test failed:', error);
     process.exit(1);

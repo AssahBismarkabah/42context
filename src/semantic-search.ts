@@ -6,7 +6,7 @@ import {
   SearchOptions,
   SearchResult,
   SemanticSearchConfig,
-  FileChangeEvent
+  FileChangeEvent,
 } from './types';
 
 export class SemanticSearch {
@@ -24,12 +24,12 @@ export class SemanticSearch {
       chunkOverlap: 200,
       maxResults: 10,
       minSimilarity: 0.7,
-      ...config
+      ...config,
     };
 
     this.parser = new CodeParser();
     this.embeddingService = new EmbeddingService();
-    
+
     // Initialize ChromaDB vector store with proper connection parameters
     this.vectorStore = new ChromaVectorStore(
       'code_vectors',
@@ -44,7 +44,7 @@ export class SemanticSearch {
 
     try {
       console.log('Initializing Semantic Search...');
-      
+
       // Initialize embedding service
       await this.embeddingService.initialize();
       console.log('Embedding service initialized');
@@ -89,7 +89,7 @@ export class SemanticSearch {
         type: chunk.type,
         lineStart: chunk.startLine,
         lineEnd: chunk.endLine,
-        timestamp: chunk.timestamp
+        timestamp: chunk.timestamp,
       }));
 
       // Delete existing vectors for this file (if any)
@@ -98,7 +98,6 @@ export class SemanticSearch {
       // Add new vectors to store
       await this.vectorStore.addVectors(codeVectors);
       console.log(`Indexed ${codeVectors.length} vectors for ${filePath}`);
-
     } catch (error) {
       console.error(`Failed to index file ${filePath}:`, error);
       throw error;
@@ -123,7 +122,7 @@ export class SemanticSearch {
       const searchOptions = {
         topK: this.config.maxResults || 10,
         minSimilarity: this.config.minSimilarity || 0.7,
-        ...options
+        ...options,
       };
 
       // Search for similar vectors
@@ -136,21 +135,19 @@ export class SemanticSearch {
       console.log(`Found ${searchResults.length} raw results`);
 
       // Filter by minimum similarity and other criteria
-      let filteredResults = searchResults.filter(result => 
-        result.similarity >= searchOptions.minSimilarity!
+      let filteredResults = searchResults.filter(
+        result => result.similarity >= searchOptions.minSimilarity!
       );
 
       // Apply additional filters
       if (searchOptions.filePath) {
-        filteredResults = filteredResults.filter(result => 
+        filteredResults = filteredResults.filter(result =>
           result.filePath.includes(searchOptions.filePath!)
         );
       }
 
       if (searchOptions.chunkType) {
-        filteredResults = filteredResults.filter(result => 
-          result.type === searchOptions.chunkType
-        );
+        filteredResults = filteredResults.filter(result => result.type === searchOptions.chunkType);
       }
 
       // Sort by similarity (highest first)
@@ -167,9 +164,8 @@ export class SemanticSearch {
         results: finalResults,
         query,
         resultCount: finalResults.length,
-        searchTime
+        searchTime,
       };
-
     } catch (error) {
       console.error(`Search failed for query "${query}":`, error);
       throw error;
@@ -193,7 +189,7 @@ export class SemanticSearch {
           break;
       }
     } catch (error) {
-      console.error(`Failed to handle file change event:`, error);
+      console.error('Failed to handle file change event:', error);
       // Don't throw - file changes shouldn't break the system
     }
   }
@@ -210,12 +206,12 @@ export class SemanticSearch {
 
     try {
       const vectorStoreStats = await this.vectorStore.getCollectionStats();
-      
+
       return {
         totalVectors: vectorStoreStats.count,
         embeddingDimension: this.embeddingService.getEmbeddingDimension(),
         collectionName: 'code_vectors',
-        indexedFiles: [] // This would need to be tracked separately
+        indexedFiles: [], // This would need to be tracked separately
       };
     } catch (error) {
       console.error('Failed to get index stats:', error);

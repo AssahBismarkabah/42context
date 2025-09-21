@@ -21,7 +21,7 @@ const testChunks = [
     documentation: undefined,
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk2',
@@ -38,7 +38,7 @@ const testChunks = [
     documentation: undefined,
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk3',
@@ -55,8 +55,8 @@ const testChunks = [
     documentation: undefined,
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
-  }
+    timestamp: Date.now(),
+  },
 ];
 
 async function testCodeStorage() {
@@ -66,7 +66,7 @@ async function testCodeStorage() {
     // Create storage instance
     const storage = new StorageService({
       maxMemorySize: 10 * 1024 * 1024, // 10MB
-      persistToDisk: false
+      persistToDisk: false,
     });
 
     console.log(' Storage instance created');
@@ -134,7 +134,6 @@ async function testCodeStorage() {
     console.log(` After clear: ${finalStats.totalChunks} chunks remaining`);
 
     console.log('\n All storage tests completed successfully!');
-
   } catch (error) {
     console.error(' Storage test failed:', error);
     process.exit(1);

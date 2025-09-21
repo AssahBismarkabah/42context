@@ -16,10 +16,12 @@ export interface FileWatcherOptions {
   binaryInterval?: number;
   alwaysStat?: boolean;
   depth?: number;
-  awaitWriteFinish?: boolean | {
-    stabilityThreshold?: number;
-    pollInterval?: number;
-  };
+  awaitWriteFinish?:
+    | boolean
+    | {
+        stabilityThreshold?: number;
+        pollInterval?: number;
+      };
   ignorePermissionErrors?: boolean;
   atomic?: boolean;
 }
@@ -98,7 +100,7 @@ export class FileWatcher extends EventEmitter {
 
   constructor(options: FileWatcherOptions = {}) {
     super();
-    
+
     this.options = {
       projectPath: options.projectPath || process.cwd(),
       ignored: options.ignored || [
@@ -107,7 +109,7 @@ export class FileWatcher extends EventEmitter {
         '**/dist/**',
         '**/build/**',
         '**/.DS_Store',
-        '**/Thumbs.db'
+        '**/Thumbs.db',
       ],
       persistent: options.persistent !== false,
       ignoreInitial: options.ignoreInitial !== false,
@@ -119,11 +121,11 @@ export class FileWatcher extends EventEmitter {
       depth: options.depth || undefined,
       awaitWriteFinish: options.awaitWriteFinish || {
         stabilityThreshold: 2000,
-        pollInterval: 100
+        pollInterval: 100,
       },
       ignorePermissionErrors: options.ignorePermissionErrors !== false,
       atomic: options.atomic || true,
-      ...options
+      ...options,
     } as Required<FileWatcherOptions>;
   }
 
@@ -151,12 +153,12 @@ export class FileWatcher extends EventEmitter {
         depth: this.options.depth,
         awaitWriteFinish: this.options.awaitWriteFinish,
         ignorePermissionErrors: this.options.ignorePermissionErrors,
-        atomic: this.options.atomic
+        atomic: this.options.atomic,
       });
 
       this.setupEventHandlers();
       this.isWatching = true;
-      
+
       console.log('File watcher started successfully');
     } catch (error) {
       console.error('Failed to start file watcher:', error);
@@ -187,7 +189,11 @@ export class FileWatcher extends EventEmitter {
       })
       .on('addDir', (dirPath: string, stats?: Stats) => {
         console.log(`Directory added: ${dirPath}`);
-        this.emit('directoryAdded', { dirPath, stats, timestamp: Date.now() } as DirectoryAddedEvent);
+        this.emit('directoryAdded', {
+          dirPath,
+          stats,
+          timestamp: Date.now(),
+        } as DirectoryAddedEvent);
       })
       .on('unlinkDir', (dirPath: string) => {
         console.log(`Directory removed: ${dirPath}`);
@@ -221,7 +227,7 @@ export class FileWatcher extends EventEmitter {
       this.watcher = null;
       this.isWatching = false;
       this.watchedFiles.clear();
-      
+
       console.log('File watcher stopped successfully');
     } catch (error) {
       console.error('Error stopping file watcher:', error);
@@ -269,7 +275,7 @@ export class FileWatcher extends EventEmitter {
       isWatching: this.isWatching,
       watchedFileCount: this.watchedFiles.size,
       projectPath: this.options.projectPath,
-      options: this.options
+      options: this.options,
     };
   }
 }

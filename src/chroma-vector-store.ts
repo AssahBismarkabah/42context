@@ -9,19 +9,24 @@ export class ChromaVectorStore implements VectorStore {
   private port: number;
   private authToken: string;
 
-  constructor(collectionName: string = 'code_vectors', host: string = 'localhost', port: number = 8000, authToken: string = 'test-token') {
+  constructor(
+    collectionName: string = 'code_vectors',
+    host: string = 'localhost',
+    port: number = 8000,
+    authToken: string = 'test-token'
+  ) {
     this.collectionName = collectionName;
     this.host = host;
     this.port = port;
     this.authToken = authToken;
-    
+
     // Initialize ChromaDB client with proper authentication
     this.client = new ChromaClient({
       path: `http://${this.host}:${this.port}`,
       auth: {
         provider: 'token',
-        credentials: this.authToken
-      }
+        credentials: this.authToken,
+      },
     });
   }
 
@@ -30,7 +35,7 @@ export class ChromaVectorStore implements VectorStore {
       // Create or get collection
       this.collection = await this.client.getOrCreateCollection({
         name: this.collectionName,
-        metadata: { 'hnsw:space': 'cosine' } // Use cosine similarity for code vectors
+        metadata: { 'hnsw:space': 'cosine' }, // Use cosine similarity for code vectors
       });
       console.log(`ChromaDB collection '${this.collectionName}' initialized successfully`);
     } catch (error) {
@@ -57,7 +62,7 @@ export class ChromaVectorStore implements VectorStore {
         type: v.type,
         lineStart: v.lineStart,
         lineEnd: v.lineEnd,
-        timestamp: v.timestamp
+        timestamp: v.timestamp,
       }));
 
       // Add vectors to collection
@@ -65,7 +70,7 @@ export class ChromaVectorStore implements VectorStore {
         ids,
         embeddings,
         documents,
-        metadatas
+        metadatas,
       });
 
       console.log(`Added ${vectors.length} vectors to ChromaDB collection`);
@@ -75,7 +80,11 @@ export class ChromaVectorStore implements VectorStore {
     }
   }
 
-  async searchSimilar(queryVector: number[], topK: number = 5, language?: string): Promise<VectorSearchResult[]> {
+  async searchSimilar(
+    queryVector: number[],
+    topK: number = 5,
+    language?: string
+  ): Promise<VectorSearchResult[]> {
     if (!this.collection) {
       throw new Error('Collection not initialized. Call initialize() first.');
     }
@@ -84,12 +93,12 @@ export class ChromaVectorStore implements VectorStore {
       // Build query parameters
       const queryParams: any = {
         queryEmbeddings: [queryVector],
-        nResults: topK
+        nResults: topK,
       };
 
       // Add language filter if specified
       if (language) {
-        queryParams.where = { language: language };
+        queryParams.where = { language };
       }
 
       // Perform similarity search
@@ -97,14 +106,14 @@ export class ChromaVectorStore implements VectorStore {
 
       // Transform results to our format
       const searchResults: VectorSearchResult[] = [];
-      
+
       if (results.ids && results.ids[0]) {
         for (let i = 0; i < results.ids[0].length; i++) {
           const id = results.ids[0][i];
           const document = results.documents?.[0]?.[i] || '';
           const metadata = results.metadatas?.[0]?.[i] as any;
           const distance = results.distances?.[0]?.[i] || 0;
-          
+
           searchResults.push({
             id,
             content: document,
@@ -114,7 +123,7 @@ export class ChromaVectorStore implements VectorStore {
             lineStart: metadata?.lineStart || 0,
             lineEnd: metadata?.lineEnd || 0,
             similarity: 1 - distance, // Convert distance to similarity score
-            timestamp: metadata?.timestamp || Date.now()
+            timestamp: metadata?.timestamp || Date.now(),
           });
         }
       }
@@ -134,9 +143,9 @@ export class ChromaVectorStore implements VectorStore {
     try {
       // Delete all vectors for a specific file path
       await this.collection.delete({
-        where: { filePath: filePath }
+        where: { filePath },
       });
-      
+
       console.log(`Deleted vectors for file: ${filePath}`);
     } catch (error) {
       console.error('Failed to delete vectors from ChromaDB:', error);
@@ -162,7 +171,7 @@ export class ChromaVectorStore implements VectorStore {
         type: v.type,
         lineStart: v.lineStart,
         lineEnd: v.lineEnd,
-        timestamp: v.timestamp
+        timestamp: v.timestamp,
       }));
 
       // Update vectors in collection
@@ -170,7 +179,7 @@ export class ChromaVectorStore implements VectorStore {
         ids,
         embeddings,
         documents,
-        metadatas
+        metadatas,
       });
 
       console.log(`Updated ${vectors.length} vectors in ChromaDB collection`);

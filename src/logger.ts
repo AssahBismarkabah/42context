@@ -5,7 +5,7 @@ export enum LogLevel {
   WARN = 1,
   INFO = 2,
   DEBUG = 3,
-  TRACE = 4
+  TRACE = 4,
 }
 
 export interface LoggerOptions {
@@ -53,7 +53,7 @@ export class Logger {
 
   private getTimestamp(): string {
     const now = new Date();
-    
+
     switch (this.timestampFormat) {
       case 'iso':
         return now.toISOString();
@@ -68,10 +68,13 @@ export class Logger {
 
   private formatMessage(level: string, message: string, ...args: any[]): string {
     const timestamp = this.getTimestamp();
-    const formattedArgs = args.length > 0 ? ' ' + args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ') : '';
-    
+    const formattedArgs =
+      args.length > 0
+        ? ` ${args
+            .map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+            .join(' ')}`
+        : '';
+
     return `[${timestamp}] [${level}] ${message}${formattedArgs}`;
   }
 
@@ -82,19 +85,24 @@ export class Logger {
 
     // Console output
     if (this.enableConsole) {
-      const consoleMethod = level === LogLevel.ERROR ? console.error :
-                           level === LogLevel.WARN ? console.warn :
-                           level === LogLevel.DEBUG ? console.debug :
-                           level === LogLevel.TRACE ? console.trace :
-                           console.log;
-      
+      const consoleMethod =
+        level === LogLevel.ERROR
+          ? console.error
+          : level === LogLevel.WARN
+            ? console.warn
+            : level === LogLevel.DEBUG
+              ? console.debug
+              : level === LogLevel.TRACE
+                ? console.trace
+                : console.log;
+
       consoleMethod(formattedMessage);
     }
 
     // File output
     if (this.enableFile && this.fileStream) {
-      this.fileStream.write(formattedMessage + '\n');
-      
+      this.fileStream.write(`${formattedMessage}\n`);
+
       // Check if we need to rotate the log file
       this.checkFileRotation();
     }
@@ -118,15 +126,15 @@ export class Logger {
 
     try {
       this.fileStream.end();
-      
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const rotatedFile = `${this.logFile}.${timestamp}`;
-      
+
       require('fs').renameSync(this.logFile, rotatedFile);
-      
+
       // Clean up old rotated files
       this.cleanupOldLogs();
-      
+
       // Create new log file
       this.fileStream = createWriteStream(this.logFile, { flags: 'a' });
     } catch (error) {
@@ -142,12 +150,13 @@ export class Logger {
       const path = require('path');
       const logDir = path.dirname(this.logFile);
       const logBaseName = path.basename(this.logFile);
-      
-      const files = fs.readdirSync(logDir)
-        .filter((file: string) => file.startsWith(logBaseName + '.'))
+
+      const files = fs
+        .readdirSync(logDir)
+        .filter((file: string) => file.startsWith(`${logBaseName}.`))
         .sort()
         .reverse();
-      
+
       // Keep only the most recent maxFiles
       const filesToDelete = files.slice(this.maxFiles);
       filesToDelete.forEach((file: string) => {

@@ -1,5 +1,3 @@
-
-
 import type ParserType from 'tree-sitter';
 const Parser = require('tree-sitter');
 const TypeScript = require('tree-sitter-typescript');
@@ -70,9 +68,17 @@ export class CodeParser {
 
   constructor(options: CodeParserOptions = {}) {
     this.options = {
-      languages: options.languages || ['typescript', 'javascript', 'python', 'go', 'rust', 'cpp', 'java'],
+      languages: options.languages || [
+        'typescript',
+        'javascript',
+        'python',
+        'go',
+        'rust',
+        'cpp',
+        'java',
+      ],
       maxFileSize: options.maxFileSize || 1024 * 1024, // 1MB default
-      timeout: options.timeout || 5000 // 5 seconds default
+      timeout: options.timeout || 5000, // 5 seconds default
     };
 
     this.initializeParsers();
@@ -86,7 +92,7 @@ export class CodeParser {
       try {
         const parser = new Parser();
         const languageModule = this.getLanguageModule(language);
-        
+
         if (languageModule) {
           parser.setLanguage(languageModule);
           this.parsers.set(language, parser);
@@ -136,7 +142,7 @@ export class CodeParser {
    */
   detectLanguage(filePath: string): SupportedLanguage | null {
     const ext = filePath.split('.').pop()?.toLowerCase();
-    
+
     switch (ext) {
       case 'ts':
       case 'tsx':
@@ -191,17 +197,17 @@ export class CodeParser {
 
     try {
       const startTime = Date.now();
-      
+
       // Parse the code
       const tree = parser.parse(content);
       const rootNode = tree.rootNode;
-      
+
       // Extract semantic chunks
       const chunks = this.extractSemanticChunks(rootNode, filePath, language, content);
-      
+
       const parseTime = Date.now() - startTime;
       console.log(`Parsed ${filePath} in ${parseTime}ms, found ${chunks.length} chunks`);
-      
+
       return chunks;
     } catch (error) {
       console.error(`Failed to parse file ${filePath}:`, error);
@@ -214,17 +220,17 @@ export class CodeParser {
    */
   private extractSemanticChunks(
     rootNode: ParserType.SyntaxNode,
-    filePath: string, 
+    filePath: string,
     language: SupportedLanguage,
     content: string
   ): CodeChunk[] {
     const chunks: CodeChunk[] = [];
-    
+
     // Define node types to extract based on language
     const extractableTypes = this.getExtractableNodeTypes(language);
-    
+
     // Traverse the AST
-    this.traverseAST(rootNode, (node) => {
+    this.traverseAST(rootNode, node => {
       if (extractableTypes.includes(node.type)) {
         const chunk = this.createCodeChunk(node, filePath, language, content);
         if (chunk) {
@@ -232,7 +238,7 @@ export class CodeParser {
         }
       }
     });
-    
+
     return chunks;
   }
 
@@ -251,7 +257,7 @@ export class CodeParser {
           'type_alias_declaration',
           'variable_declaration',
           'import_statement',
-          'export_statement'
+          'export_statement',
         ];
       case 'python':
         return [
@@ -260,7 +266,7 @@ export class CodeParser {
           'import_statement',
           'import_from_statement',
           'assignment',
-          'expression_statement'
+          'expression_statement',
         ];
       case 'go':
         return [
@@ -268,7 +274,7 @@ export class CodeParser {
           'method_declaration',
           'type_declaration',
           'import_declaration',
-          'var_declaration'
+          'var_declaration',
         ];
       case 'rust':
         return [
@@ -277,7 +283,7 @@ export class CodeParser {
           'impl_item',
           'trait_item',
           'use_declaration',
-          'let_declaration'
+          'let_declaration',
         ];
       case 'cpp':
       case 'c':
@@ -287,7 +293,7 @@ export class CodeParser {
           'struct_specifier',
           'namespace_definition',
           'using_declaration',
-          'declaration'
+          'declaration',
         ];
       case 'java':
         return [
@@ -299,7 +305,7 @@ export class CodeParser {
           'field_declaration',
           'local_variable_declaration',
           'import_declaration',
-          'package_declaration'
+          'package_declaration',
         ];
       default:
         return [];
@@ -309,7 +315,10 @@ export class CodeParser {
   /**
    * Traverse AST and apply callback to each node
    */
-  private traverseAST(node: ParserType.SyntaxNode, callback: (node: ParserType.SyntaxNode) => void): void {
+  private traverseAST(
+    node: ParserType.SyntaxNode,
+    callback: (node: ParserType.SyntaxNode) => void
+  ): void {
     callback(node);
     for (const child of node.children) {
       this.traverseAST(child, callback);
@@ -321,7 +330,7 @@ export class CodeParser {
    */
   private createCodeChunk(
     node: ParserType.SyntaxNode,
-    filePath: string, 
+    filePath: string,
     language: SupportedLanguage,
     content: string
   ): CodeChunk | null {
@@ -329,14 +338,14 @@ export class CodeParser {
       const nodeText = node.text;
       const startLine = node.startPosition.row;
       const endLine = node.endPosition.row;
-      
+
       // Extract meaningful information based on node type
       const chunkType = this.determineChunkType(node.type);
       const name = this.extractNodeName(node, language);
       const signature = this.extractSignature(node, language);
       const documentation = this.extractDocumentation(node, content);
       const dependencies = this.extractDependencies(node, language);
-      
+
       return {
         id: `${filePath}:${node.startPosition.row}:${node.startPosition.column}`,
         type: chunkType,
@@ -352,7 +361,7 @@ export class CodeParser {
         documentation,
         dependencies,
         metadata: undefined,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
     } catch (error) {
       console.error('Failed to create code chunk:', error);
@@ -380,14 +389,14 @@ export class CodeParser {
   private extractNodeName(node: ParserType.SyntaxNode, language: SupportedLanguage): string {
     // Look for common name patterns in different languages
     const namePatterns = this.getNamePatterns(language);
-    
+
     for (const pattern of namePatterns) {
       const nameNode = this.findNodeByType(node, pattern);
       if (nameNode) {
         return nameNode.text;
       }
     }
-    
+
     return 'anonymous';
   }
 
@@ -415,7 +424,7 @@ export class CodeParser {
           'method_name',
           'class_name',
           'interface_name',
-          'enum_name'
+          'enum_name',
         ];
       default:
         return ['identifier'];
@@ -429,39 +438,43 @@ export class CodeParser {
     if (node.type === type) {
       return node;
     }
-    
+
     for (const child of node.children) {
       const found = this.findNodeByType(child, type);
       if (found) {
         return found;
       }
     }
-    
+
     return null;
   }
 
   /**
    * Extract function/method signature
    */
-  private extractSignature(node: ParserType.SyntaxNode, language: SupportedLanguage): string | undefined {
+  private extractSignature(
+    node: ParserType.SyntaxNode,
+    language: SupportedLanguage
+  ): string | undefined {
     // Look for parameters and return types
     const signatureParts: string[] = [];
-    
+
     // Add node name
     const name = this.extractNodeName(node, language);
     if (name) {
       signatureParts.push(name);
     }
-    
+
     // Add parameters
-    const paramsNode = this.findNodeByType(node, 'parameters') ||
-                      this.findNodeByType(node, 'formal_parameters') ||
-                      this.findNodeByType(node, 'argument_list');
-    
+    const paramsNode =
+      this.findNodeByType(node, 'parameters') ||
+      this.findNodeByType(node, 'formal_parameters') ||
+      this.findNodeByType(node, 'argument_list');
+
     if (paramsNode) {
       signatureParts.push(paramsNode.text);
     }
-    
+
     return signatureParts.length > 0 ? signatureParts.join(' ') : undefined;
   }
 
@@ -471,20 +484,22 @@ export class CodeParser {
   private extractDocumentation(node: ParserType.SyntaxNode, content: string): string | undefined {
     // Look for comments before the node
     const startLine = node.startPosition.row;
-    
+
     // Simple approach: look for comments in the lines before this node
     const lines = content.split('\n');
     const docLines: string[] = [];
-    
+
     for (let i = startLine - 1; i >= 0; i--) {
       const line = lines[i];
       if (!line) continue;
-      
+
       // Check for different comment styles
-      if (line.trim().startsWith('//') ||
-          line.trim().startsWith('#') ||
-          line.trim().startsWith('/*') ||
-          line.trim().startsWith('*')) {
+      if (
+        line.trim().startsWith('//') ||
+        line.trim().startsWith('#') ||
+        line.trim().startsWith('/*') ||
+        line.trim().startsWith('*')
+      ) {
         docLines.unshift(line.trim());
       } else if (line.trim() === '') {
         continue; // Allow empty lines
@@ -492,7 +507,7 @@ export class CodeParser {
         break; // Stop at non-comment, non-empty line
       }
     }
-    
+
     return docLines.length > 0 ? docLines.join('\n') : undefined;
   }
 
@@ -501,24 +516,24 @@ export class CodeParser {
    */
   private extractDependencies(node: ParserType.SyntaxNode, language: SupportedLanguage): string[] {
     const dependencies: string[] = [];
-    
+
     // Find all identifier references in the current scope
     const identifierNodes = this.findAllNodesByType(node, 'identifier');
     const localIdentifiers = new Set<string>();
-    
+
     // First, collect all local identifiers (function parameters, variables, etc.)
     this.collectLocalIdentifiers(node, language, localIdentifiers);
-    
+
     // Then find external references (excluding local identifiers and built-ins)
     for (const identifierNode of identifierNodes) {
       const identifierName = identifierNode.text;
-      
+
       // Skip local identifiers, built-ins, and common keywords
       if (this.isExternalReference(identifierName, language, localIdentifiers)) {
         dependencies.push(identifierName);
       }
     }
-    
+
     // Also collect import statements
     const importPatterns = this.getImportPatterns(language);
     for (const pattern of importPatterns) {
@@ -530,7 +545,7 @@ export class CodeParser {
         }
       }
     }
-    
+
     // Remove duplicates and return
     return [...new Set(dependencies)];
   }
@@ -538,7 +553,11 @@ export class CodeParser {
   /**
    * Collect local identifiers (parameters, variables, etc.) to exclude from dependencies
    */
-  private collectLocalIdentifiers(node: ParserType.SyntaxNode, language: SupportedLanguage, localIdentifiers: Set<string>): void {
+  private collectLocalIdentifiers(
+    node: ParserType.SyntaxNode,
+    language: SupportedLanguage,
+    localIdentifiers: Set<string>
+  ): void {
     // Find parameter declarations
     const paramPatterns = this.getParameterPatterns(language);
     for (const pattern of paramPatterns) {
@@ -550,7 +569,7 @@ export class CodeParser {
         }
       }
     }
-    
+
     // Find variable declarations
     const varPatterns = this.getVariableDeclarationPatterns(language);
     for (const pattern of varPatterns) {
@@ -567,27 +586,31 @@ export class CodeParser {
   /**
    * Check if an identifier is an external reference (not local or built-in)
    */
-  private isExternalReference(identifierName: string, language: SupportedLanguage, localIdentifiers: Set<string>): boolean {
+  private isExternalReference(
+    identifierName: string,
+    language: SupportedLanguage,
+    localIdentifiers: Set<string>
+  ): boolean {
     // Skip if it's a local identifier
     if (localIdentifiers.has(identifierName)) {
       return false;
     }
-    
+
     // Skip built-in keywords and common names
     if (this.isBuiltInIdentifier(identifierName, language)) {
       return false;
     }
-    
+
     // Skip very short identifiers (likely not meaningful)
     if (identifierName.length < 2) {
       return false;
     }
-    
+
     // Skip numeric identifiers
     if (/^\d+$/.test(identifierName)) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -604,35 +627,120 @@ export class CodeParser {
    */
   private getBuiltInIdentifiers(language: SupportedLanguage): Set<string> {
     const commonBuiltIns = new Set([
-      'console', 'log', 'error', 'warn', 'info', 'debug',
-      'true', 'false', 'null', 'undefined', 'this', 'self',
-      'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default',
-      'break', 'continue', 'return', 'function', 'class', 'interface',
-      'public', 'private', 'protected', 'static', 'final', 'const', 'let', 'var'
+      'console',
+      'log',
+      'error',
+      'warn',
+      'info',
+      'debug',
+      'true',
+      'false',
+      'null',
+      'undefined',
+      'this',
+      'self',
+      'if',
+      'else',
+      'for',
+      'while',
+      'do',
+      'switch',
+      'case',
+      'default',
+      'break',
+      'continue',
+      'return',
+      'function',
+      'class',
+      'interface',
+      'public',
+      'private',
+      'protected',
+      'static',
+      'final',
+      'const',
+      'let',
+      'var',
     ]);
-    
+
     switch (language) {
       case 'typescript':
       case 'javascript':
         return new Set([
           ...commonBuiltIns,
-          'Array', 'Object', 'String', 'Number', 'Boolean', 'Date', 'Math',
-          'JSON', 'Promise', 'async', 'await', 'try', 'catch', 'throw', 'new',
-          'typeof', 'instanceof', 'in', 'of', 'delete', 'void', 'yield'
+          'Array',
+          'Object',
+          'String',
+          'Number',
+          'Boolean',
+          'Date',
+          'Math',
+          'JSON',
+          'Promise',
+          'async',
+          'await',
+          'try',
+          'catch',
+          'throw',
+          'new',
+          'typeof',
+          'instanceof',
+          'in',
+          'of',
+          'delete',
+          'void',
+          'yield',
         ]);
       case 'python':
         return new Set([
           ...commonBuiltIns,
-          'print', 'len', 'range', 'str', 'int', 'float', 'bool', 'list', 'dict',
-          'tuple', 'set', 'import', 'from', 'as', 'def', 'class', 'try', 'except',
-          'finally', 'raise', 'with', 'pass', 'lambda', 'global', 'nonlocal'
+          'print',
+          'len',
+          'range',
+          'str',
+          'int',
+          'float',
+          'bool',
+          'list',
+          'dict',
+          'tuple',
+          'set',
+          'import',
+          'from',
+          'as',
+          'def',
+          'class',
+          'try',
+          'except',
+          'finally',
+          'raise',
+          'with',
+          'pass',
+          'lambda',
+          'global',
+          'nonlocal',
         ]);
       case 'java':
         return new Set([
           ...commonBuiltIns,
-          'System', 'String', 'Integer', 'Double', 'Boolean', 'ArrayList', 'HashMap',
-          'package', 'import', 'extends', 'implements', 'abstract', 'synchronized',
-          'volatile', 'transient', 'native', 'strictfp', 'assert'
+          'System',
+          'String',
+          'Integer',
+          'Double',
+          'Boolean',
+          'ArrayList',
+          'HashMap',
+          'package',
+          'import',
+          'extends',
+          'implements',
+          'abstract',
+          'synchronized',
+          'volatile',
+          'transient',
+          'native',
+          'strictfp',
+          'assert',
         ]);
       default:
         return commonBuiltIns;
@@ -708,15 +816,15 @@ export class CodeParser {
    */
   private findAllNodesByType(node: ParserType.SyntaxNode, type: string): ParserType.SyntaxNode[] {
     const results: ParserType.SyntaxNode[] = [];
-    
+
     if (node.type === type) {
       results.push(node);
     }
-    
+
     for (const child of node.children) {
       results.push(...this.findAllNodesByType(child, type));
     }
-    
+
     return results;
   }
 
@@ -740,12 +848,10 @@ export class CodeParser {
 
     try {
       // Parse incrementally if we have an old tree
-      const tree = oldTree
-        ? parser.parse(content, oldTree)
-        : parser.parse(content);
-      
+      const tree = oldTree ? parser.parse(content, oldTree) : parser.parse(content);
+
       const chunks = this.extractSemanticChunks(tree.rootNode, filePath, language, content);
-      
+
       return { chunks, tree };
     } catch (error) {
       console.error(`Failed to parse file incrementally ${filePath}:`, error);
@@ -778,7 +884,7 @@ export class CodeParser {
     return {
       supportedLanguages: this.options.languages.length,
       parsersInitialized: this.parsers.size,
-      maxFileSize: this.options.maxFileSize
+      maxFileSize: this.options.maxFileSize,
     };
   }
 }
@@ -806,7 +912,7 @@ module.exports.SupportedLanguage = {
   Rust: 'rust',
   Cpp: 'cpp',
   C: 'c',
-  Java: 'java'
+  Java: 'java',
 };
 
 module.exports.CodeParserOptions = {};

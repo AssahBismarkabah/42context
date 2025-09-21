@@ -13,7 +13,14 @@
     "dev": "tsc && node --watch dist/index.js",
     "test": "tsc && node --test dist/test/*.js",
     "test:watch": "tsc && node --test --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts test/**/*.ts --ext .ts",
+    "lint:fix": "eslint src/**/*.ts test/**/*.ts --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.md\" \"*.json\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.md\" \"*.json\"",
+    "type-check": "tsc --noEmit",
+    "lint-and-format": "npm run lint:fix && npm run format",
+    "pre-commit": "npm run type-check && npm run lint-and-format"
   },
   "keywords": [
     "mcp",
@@ -43,7 +50,12 @@
   "devDependencies": {
     "@types/chokidar": "^2.1.3",
     "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.44.0",
+    "@typescript-eslint/parser": "^8.44.0",
     "eslint": "^8.57.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "prettier": "^3.6.2",
     "typescript": "^5.3.3"
   },
   "engines": {

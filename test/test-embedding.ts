@@ -22,7 +22,7 @@ const testChunks: CodeChunk[] = [
     documentation: 'Calculates the sum of two numbers',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk2',
@@ -39,7 +39,7 @@ const testChunks: CodeChunk[] = [
     documentation: 'Calculates the product of two numbers',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   },
   {
     id: 'chunk3',
@@ -56,8 +56,8 @@ const testChunks: CodeChunk[] = [
     documentation: 'A simple calculator class',
     dependencies: [],
     metadata: undefined,
-    timestamp: Date.now()
-  }
+    timestamp: Date.now(),
+  },
 ];
 
 async function testEmbeddingService() {
@@ -67,7 +67,7 @@ async function testEmbeddingService() {
     // Create embedding service
     const embeddingService = createEmbeddingService({
       modelName: 'Xenova/all-MiniLM-L6-v2',
-      cacheSize: 1000
+      cacheSize: 1000,
     });
 
     console.log(' Embedding service created');
@@ -88,7 +88,7 @@ async function testEmbeddingService() {
     console.log('\n Testing batch embedding generation...');
     const batchResults = await embeddingService.generateBatchEmbeddings({
       chunks: testChunks,
-      batchSize: 2
+      batchSize: 2,
     });
     console.log(` Generated ${batchResults.length} embeddings in batch`);
 
@@ -98,7 +98,9 @@ async function testEmbeddingService() {
       batchResults[0].vector,
       batchResults[1].vector
     );
-    console.log(` Similarity between "${testChunks[0].name}" and "${testChunks[1].name}": ${similarity.toFixed(4)}`);
+    console.log(
+      ` Similarity between "${testChunks[0].name}" and "${testChunks[1].name}": ${similarity.toFixed(4)}`
+    );
 
     // Test finding most similar
     console.log('\n Testing most similar search...');
@@ -130,7 +132,6 @@ async function testEmbeddingService() {
     console.log(` Model info: ${JSON.stringify(modelInfo, null, 2)}`);
 
     console.log('\n All embedding tests completed successfully!');
-
   } catch (error) {
     console.error(' Embedding test failed:', error);
     process.exit(1);

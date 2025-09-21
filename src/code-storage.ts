@@ -61,7 +61,7 @@ class CodeStorage {
     this.options = {
       maxMemorySize: options.maxMemorySize || 50 * 1024 * 1024, // 50MB default
       persistToDisk: options.persistToDisk || false,
-      storagePath: options.storagePath || './.code-storage'
+      storagePath: options.storagePath || './.code-storage',
     };
 
     this.memoryCache = new Map();
@@ -142,7 +142,7 @@ class CodeStorage {
     try {
       const fs = require('fs');
       const path = require('path');
-      
+
       const chunkFile = path.join(this.options.storagePath, `${chunk.id}.json`);
       fs.writeFileSync(chunkFile, JSON.stringify(chunk));
     } catch (error) {
@@ -155,7 +155,7 @@ class CodeStorage {
    */
   async searchChunks(query: SearchQuery): Promise<CodeChunk[]> {
     const startTime = Date.now();
-    
+
     // Start with all chunk IDs
     let candidateIds = new Set(this.memoryCache.keys());
 
@@ -259,7 +259,7 @@ class CodeStorage {
     return {
       totalChunks: this.memoryCache.size,
       memoryUsage: this.getCurrentMemoryUsage(),
-      fileCount: this.fileIndex.size
+      fileCount: this.fileIndex.size,
     };
   }
 
