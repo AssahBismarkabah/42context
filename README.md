@@ -20,20 +20,8 @@
   <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue"/></a>
 </div>
 
-## 1. Project Introduction
 
-MCP Local Context Engine is a comprehensive semantic code search and analysis platform that leverages the Model Context Protocol (MCP) for intelligent code understanding. Built with TypeScript and powered by vector databases, it provides advanced code search capabilities across multiple programming languages using AI-powered embeddings.
-
-### Key Features
-- **Multi-Language Support**: Comprehensive parsing for JavaScript, TypeScript, Python, Java, C/C++, Rust, Go, Ruby, and PHP
-- **Semantic Code Search**: Natural language queries with vector similarity matching
-- **Real-time Indexing**: File system watching with automatic re-indexing
-- **AST-Based Analysis**: Deep code structure understanding using Tree-sitter parsers
-- **Vector Database Integration**: High-performance similarity search with ChromaDB
-- **Comprehensive CLI**: Full-featured command-line interface with shell completions
-
-### Architecture Overview
-The engine combines multiple advanced technologies to provide a unified platform for code analysis and search. It uses Tree-sitter for multi-language parsing, Transformers.js for AI embeddings, and ChromaDB for efficient vector storage and retrieval.
+MCP Local Context Engine is a comprehensive semantic code search and analysis platform that leverages the Model Context Protocol (MCP) for intelligent code understanding, built with TypeScript and powered by vector databases to provide advanced AI-powered code search capabilities across JavaScript, TypeScript, Python, Java, C/C++, Rust, Go, Ruby, and PHP. The engine combines Tree-sitter for multi-language parsing, Transformers.js for AI embeddings, and ChromaDB for efficient vector storage and retrieval, enabling natural language queries with vector similarity matching, real-time file system watching with automatic re-indexing, deep AST-based code structure analysis, high-performance similarity search, and full MCP server integration with stdio and HTTP transports, while featuring advanced memory management that handles large codebases (7,620+ files) without segmentation faults and a comprehensive CLI with shell completions.
 
 ## 2. Technical Specifications
 
@@ -88,8 +76,8 @@ The engine combines multiple advanced technologies to provide a unified platform
 </tr>
 <tr>
 <td align="center">Memory Usage</td>
-<td align="center">2GB max configured</td>
-<td align="center">Large codebases</td>
+<td align="center">640-837MB stable</td>
+<td align="center">Keycloak codebase (7,620 files)</td>
 </tr>
 </tbody>
 </table>
@@ -175,6 +163,92 @@ The engine combines multiple advanced technologies to provide a unified platform
 </table>
 </div>
 
+### Memory Management System
+The engine includes an **advanced memory management system** specifically designed to handle large-scale code indexing without segmentation faults or memory exhaustion.
+
+#### Key Memory Features
+- **Configurable Memory Profiles**: Conservative, Aggressive, and Development profiles
+- **Real-time Memory Monitoring**: Continuous memory pressure detection
+- **Garbage Collection Integration**: Coordinated GC with `--expose-gc` flag
+- **Resource Pooling**: Efficient embedding resource reuse
+- **Tensor Cleanup**: Proper ONNX.js tensor disposal to prevent native memory leaks
+- **Sequential Processing**: Memory-safe batch processing replacing unsafe Promise.all()
+
+#### Memory Profiles
+| Profile | Memory Limit | Batch Size | Target System |
+|---------|-------------|------------|---------------|
+| **Conservative** | 6GB | 16 files | 8GB RAM systems |
+| **Aggressive** | 12GB | 32 files | 16GB+ RAM systems |
+| **Development** | 4GB | 8 files | Development environments |
+
+#### Usage with Memory Optimization
+```bash
+# Basic usage with GC enabled (required)
+node --expose-gc dist/src/cli-main.js index /path/to/codebase --recursive
+
+# With memory profile selection
+MEMORY_PROFILE=conservative node --expose-gc dist/src/cli-main.js index /path/to/codebase
+
+# Monitor memory usage
+node --expose-gc dist/src/cli-main.js status --memory
+```
+
+#### Performance Results
+- **Before**: Segmentation faults at ~500 files, unbounded memory growth
+- **After**: Stable processing of 7,620+ files, memory usage 640-837MB
+- **Improvement**: 100% stability, no crashes, predictable memory usage
+
+For detailed memory management documentation, see [docs/memory-management.md](docs/memory-management.md).
+
+##  MCP Server Integration
+
+The 42Context Engine includes a full-featured MCP (Model Context Protocol) server that exposes semantic search and code analysis capabilities to MCP-compatible clients like Kilo Code, Claude Desktop, and VS Code extensions.
+
+### Configuration Example
+
+ MCP client configuration for 42Context:
+
+```json
+{
+  "mcpServers": {
+    "42context": {
+      "command": "node",
+      "args": [
+        "--expose-gc",
+        "/path/to/dist/src/cli-main.js",
+        "server",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "disabled": false,
+      "autoApprove": [],
+      "alwaysAllow": [
+        "code_search",
+        "context_analysis",
+        "find_related_code",
+        "generate_documentation",
+        "trace_method_calls",
+        "build_inheritance_tree",
+        "analyze_dependencies",
+        "find_implementations"
+      ]
+    }
+  }
+}
+```
+
+**Configuration Notes:**
+- Replace `/path/to/dist/src/cli-main.js` with the actual path to your 42Context installation
+- The `--expose-gc` flag is required for optimal memory management
+- The `alwaysAllow` array includes all 8 available MCP tools for seamless operation
+- The `stdio` transport is recommended for local client integration
+- Environment variables can be added to the `env` object as needed
+
+For detailed MCP configuration and troubleshooting, see [MCP_SERVER_GUIDE.md](MCP_SERVER_GUIDE.md).
+
 ## 4. Deployment
 
 ### Prerequisites
@@ -199,7 +273,7 @@ npm run build
 ```
 
 ### Configuration
-The engine provides a **comprehensive three-tier configuration system** with automatic validation and flexible customization options.
+The engine provides a **comprehensive three-tier configuration system** with automatic validation and flexible customization options. Use the `config` command to manage settings (see CLI Commands Reference table above for details).
 
 #### Configuration Hierarchy (Priority Order)
 1. **Environment Variables** (highest priority) - `DEV_CONTEXT_*` prefix
@@ -210,45 +284,8 @@ The engine provides a **comprehensive three-tier configuration system** with aut
 
 **1. JSON Configuration File**
 ```bash
-# Create custom configuration file
+# Use custom configuration file
 node dist/src/cli-main.js --config my-config.json search "authentication"
-```
-
-**Example custom configuration** (`test-config.json`):
-```json
-{
-  "projectPath": "/path/to/project",
-  "embedding": {
-    "modelName": "Xenova/all-MiniLM-L6-v2",
-    "batchSize": 64,
-    "maxRetries": 5,
-    "retryDelay": 2000
-  },
-  "vectorStore": {
-    "type": "chroma",
-    "collectionName": "custom_code_vectors",
-    "host": "localhost",
-    "port": 8000,
-    "embeddingDimension": 384,
-    "maxVectorsPerFile": 2000,
-    "similarityThreshold": 0.8
-  },
-  "parser": {
-    "maxFileSize": 10485760,
-    "chunkSize": 1500,
-    "chunkOverlap": 300,
-    "supportedLanguages": ["javascript", "typescript", "python", "java"],
-    "extractDocumentation": true,
-    "extractDependencies": true
-  },
-  "performance": {
-    "maxConcurrentOperations": 20,
-    "batchProcessingSize": 64,
-    "memoryLimit": 4096,
-    "cpuLimit": 90,
-    "enableResourceMonitoring": true
-  }
-}
 ```
 
 **2. Environment Variables**
@@ -259,101 +296,63 @@ export DEV_CONTEXT_EMBEDDING_BATCH_SIZE=128
 # Set vector store host
 export DEV_CONTEXT_VECTOR_STORE_HOST=chromadb.example.com
 
-# Set memory limit
-export DEV_CONTEXT_MEMORY_LIMIT=4096
-
 # Run with environment variables
 node dist/src/cli-main.js search "authentication"
 ```
 
-**3. CLI Configuration Commands**
-```bash
-# View all settings
-node dist/src/cli-main.js config list
+For detailed configuration management, see the `config` command in the CLI Commands Reference table above.
 
-# Get specific configuration value
-node dist/src/cli-main.js config get vectorStore.host
+## 5. CLI Commands Reference
 
-# Set configuration value
-node dist/src/cli-main.js config set vectorStore.batchSize 64
+### Complete Command Overview
 
-# Test configuration changes
-node dist/src/cli-main.js config get embedding.batchSize
-```
+| Command | Description | Arguments | Key Options | Usage Example |
+|---------|-------------|-----------|-------------|---------------|
+| **`search`** | Semantic code search with AI-powered similarity matching | `<query>`: Search query string | `-l, --language <lang>`: Filter by language<br>`-t, --type <type>`: Filter by code type<br>`-f, --file <path>`: Filter by file path<br>`-k, --top-k <n>`: Results count (default: 5)<br>`-s, --min-similarity <score>`: Min similarity (default: 0.2)<br>`--format <format>`: Output format (json, table, plain) | `node dist/src/cli-main.js search "authentication flow" --language java --top-k 10` |
+| **`analyze`** | Analyze code structure, dependencies, and complexity | `[file-path]`: Specific file to analyze | `-d, --depth <number>`: Analysis depth (default: 1)<br>`--format <format>`: Output format (json, tree, plain) | `node dist/src/cli-main.js analyze src/memory-manager.ts --format json` |
+| **`index`** | Index files or directories for semantic search | `[path]`: File/directory to index (default: current directory) | `-r, --recursive`: Index recursively<br>`-f, --force`: Force re-indexing | `node dist/src/cli-main.js index src --recursive` |
+| **`index-xrefs`** | Build cross-reference indexes for advanced analysis | *None* | *No additional options* | `node dist/src/cli-main.js index-xrefs` |
+| **`start`** | Start real-time file watching with auto-reindexing | *None* | `-p, --project-path <path>`: Project path (default: current directory) | `node dist/src/cli-main.js start --project-path /path/to/project` |
+| **`stats`** | Display system statistics and index information | *None* | `--format <format>`: Output format (json, table) | `node dist/src/cli-main.js stats --format table` |
+| **`clear`** | Clear indexes, vectors, and caches | *None* | `--vectors`: Clear vector store<br>`--cache`: Clear embedding cache<br>`--all`: Clear everything | `node dist/src/cli-main.js clear --all` |
+| **`config`** | Manage configuration settings | `<action>`: list, get, set<br>`[key]`: Configuration key (for get/set)<br>`[value]`: New value (for set) | *No additional options* | `node dist/src/cli-main.js config list`<br>`node dist/src/cli-main.js config get vectorStore.host` |
+| **`server`** | Start MCP server for external client integration | *None* | `--transport <type>`: stdio or http<br>`--port <number>`: Port for HTTP transport | `node dist/src/cli-main.js server --transport stdio` |
+| **`debug`** | Debugging and testing utilities | `<action>`: test-connection, parse<br>`[file]`: File path (for parse action) | *No additional options* | `node dist/src/cli-main.js debug test-connection` |
+| **`completion`** | Generate shell completion scripts | `<shell>`: bash, zsh, fish | *No additional options* | `node dist/src/cli-main.js completion bash` |
 
-#### Key Configuration Sections
+### Global Options (Available for All Commands)
 
-| Section | Purpose | Key Settings |
-|---------|---------|--------------|
-| **vectorStore** | ChromaDB connection and vector storage | host, port, collectionName, embeddingDimension |
-| **embedding** | AI model settings for code embeddings | modelName, batchSize, maxRetries, retryDelay |
-| **parser** | Code analysis and chunking | maxFileSize, chunkSize, chunkOverlap, supportedLanguages |
-| **fileWatcher** | Real-time file monitoring | ignored patterns, maxFileSize, polling settings |
-| **semanticSearch** | Search behavior tuning | maxResults, minSimilarity, enableCaching |
-| **performance** | Resource usage limits | maxConcurrentOperations, memoryLimit, cpuLimit |
-| **security** | File access and content filtering | allowedFileExtensions, enableSandbox, maxFileSize |
-| **logging** | Debug and monitoring output | level, enableConsole, enableFile |
+| Option | Description | Example |
+|--------|-------------|---------|
+| `-V, --version` | Display version information | `node dist/src/cli-main.js --version` |
+| `-d, --debug` | Enable debug mode with detailed logging | `node dist/src/cli-main.js --debug search "test"` |
+| `-c, --config <path>` | Specify custom configuration file | `node dist/src/cli-main.js --config my-config.json search "test"` |
+| `-h, --help` | Display help for specific command | `node dist/src/cli-main.js search --help` |
 
-
-
-
-## 5. Usage
-
-### Basic Commands
+### Quick Start Examples
 
 ```bash
-# Index a directory recursively
-node dist/src/cli-main.js index /path/to/code --recursive
-
-# Search for code semantically
+# Basic semantic search
 node dist/src/cli-main.js search "authentication flow"
 
-# Analyze code structure
-node dist/src/cli-main.js analyze /path/to/file.java --format json
-
-# Start real-time file watching
-node dist/src/cli-main.js start --project-path /path/to/project
-```
-
-### Advanced Search Examples
-
-```bash
-# Search with language filtering
+# Advanced search with filters
 node dist/src/cli-main.js search "user authentication" \
   --language java \
   --type function \
   --top-k 10 \
   --min-similarity 0.5
 
-# Get system statistics
-node dist/src/cli-main.js stats
+# Index codebase recursively
+node dist/src/cli-main.js index /path/to/code --recursive
 
-# Manage configuration
-node dist/src/cli-main.js config list
-node dist/src/cli-main.js config get vectorStore.host
+# Analyze specific file
+node dist/src/cli-main.js analyze src/memory-manager.ts --format json
 
-# Debug and testing
-node dist/src/cli-main.js debug test-connection
-node dist/src/cli-main.js debug parse /path/to/file.java
+# Start MCP server for IDE integration
+node dist/src/cli-main.js server --transport stdio
 
-# Generate shell completions
-node dist/src/cli-main.js completion bash
-```
-
-### Administrative Commands
-
-```bash
-# Clear
-# Clear vectors and cache
-node dist/src/cli-main.js clear --vectors
-node dist/src/cli-main.js clear --cache
+# Clear all data and start fresh
 node dist/src/cli-main.js clear --all
-
-# Show system statistics
-node dist/src/cli-main.js stats --detailed
-
-# Test connections
-node dist/src/cli-main.js debug test-connection
 ```
 
 
