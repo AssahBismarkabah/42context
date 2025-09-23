@@ -13,7 +13,10 @@
 
 </div>
 
-MCP Local Context Engine is a comprehensive semantic code search and analysis platform that leverages the Model Context Protocol (MCP) for intelligent code understanding. Built with TypeScript and powered by vector databases, it provides advanced AI-powered code search capabilities across JavaScript, TypeScript, Python, Java, C/C++, Rust, Go, Ruby, and PHP. The engine integrates Tree-sitter for multi-language parsing, Transformers.js for AI embeddings, and ChromaDB for efficient vector storage and retrieval. Key features include natural language queries with vector similarity matching, real-time file system watching with automatic re-indexing, deep AST-based code structure analysis, high-performance similarity search, and full MCP server integration with stdio and HTTP transports. It also incorporates advanced memory management to handle large codebases (7,620+ files) without segmentation faults, along with a comprehensive CLI supporting shell completions.
+42Context Local Context Engine is a comprehensive semantic code search and analysis tool that leverages MCP for intelligent code understanding. 
+it provides advanced AI-powered code search capabilities across codebase.
+
+Key features include natural language queries with vector similarity matching, real-time file system watching with automatic re-indexing, deep AST-based code structure analysis, high-performance similarity search, and full MCP server integration with stdio and HTTP transports. It also incorporates advanced memory management to handle large codebases (7,620+ files) without segmentation faults, along with a comprehensive CLI supporting shell completions.
 
 ## Technical Specifications
 
@@ -86,7 +89,7 @@ node --expose-gc dist/src/cli-main.js index /path/to/codebase --recursive
 MEMORY_PROFILE=conservative node --expose-gc dist/src/cli-main.js index /path/to/codebase
 
 # Monitor memory usage
-node --expose-gc dist/src/cli-main.js status --memory
+MEMORY_PROFILE=conservative node --expose-gc dist/src/cli-main.js stats
 ```
 
 #### Performance Results
@@ -215,7 +218,7 @@ For detailed configuration management, see the `config` command in the CLI Comma
 | **`start`**  | Start real-time file watching with auto-reindexing | *None*                            | `-p, --project-path <path>`: Project path (default: current directory)     | `node dist/src/cli-main.js start --project-path /path/to/project`            |
 | **`stats`**  | Display system statistics and index information  | *None*                            | `--format <format>`: Output format (json, table)                           | `node dist/src/cli-main.js stats --format table`                             |
 | **`clear`**  | Clear indexes, vectors, and caches               | *None*                            | `--vectors`: Clear vector store<br>`--cache`: Clear embedding cache<br>`--all`: Clear everything | `node dist/src/cli-main.js clear --all`                                      |
-| **`config`** | Manage configuration settings                    | `<action>`: list, get, set<br>`[key]`: Configuration key (for get/set)<br>`[value]`: New value (for set) | *No additional options*                                                    | `node dist/src/cli-main.js config list`<br>`node dist/src/cli-main.js config get vectorStore.host` |
+| **`config`** | Manage configuration settings                    | `<action>`: list, set, reset<br>`[key]`: Configuration key (for set)<br>`[value]`: New value (for set) | *No additional options*                                                    | `node dist/src/cli-main.js config list` |
 | **`server`** | Start MCP server for external client integration | *None*                            | `--transport <type>`: stdio or http<br>`--port <number>`: Port for HTTP transport | `node dist/src/cli-main.js server --transport stdio`                         |
 | **`debug`**  | Debugging and testing utilities                  | `<action>`: test-connection, parse<br>`[file]`: File path (for parse action) | *No additional options*                                                    | `node dist/src/cli-main.js debug test-connection`                            |
 | **`completion`** | Generate shell completion scripts            | `<shell>`: bash, zsh, fish        | *No additional options*                                                    | `node dist/src/cli-main.js completion bash`                                  |
