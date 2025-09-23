@@ -5,10 +5,10 @@ import TypeScript from 'tree-sitter-typescript';
 import Python from 'tree-sitter-python';
 import Go from 'tree-sitter-go';
 import Rust from 'tree-sitter-rust';
-import { Logger } from './logger';
-import { CodeStorage } from './code-storage';
-import { ChromaVectorStore } from './chroma-vector-store';
-import { EmbeddingService } from './embedding-service';
+import { Logger } from '../core/logger';
+import { CodeStorage } from '../storage/code-storage';
+import { ChromaVectorStore } from '../ai/chroma-vector-store';
+import { EmbeddingService } from '../ai/embedding-service';
 import * as path from 'path';
 
 const logger = new Logger();

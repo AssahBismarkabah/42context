@@ -1,5 +1,5 @@
 import { ChromaClient, Collection } from 'chromadb';
-import { VectorStore, VectorSearchResult, CodeVector } from './types';
+import { VectorStore, VectorSearchResult, CodeVector } from '../core/types';
 
 export class ChromaVectorStore implements VectorStore {
   private client: ChromaClient;

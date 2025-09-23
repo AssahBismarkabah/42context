@@ -2,18 +2,18 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { getGlobalLogger } from './logger.js';
-import { SemanticSearch } from './semantic-search.js';
-import { ConfigManager } from './config.js';
-import { CodeParser } from './code-parser.js';
+import { getGlobalLogger } from '../core/logger.js';
+import { SemanticSearch } from '../ai/semantic-search.js';
+import { ConfigManager } from '../core/config.js';
+import { CodeParser } from '../analysis/code-parser.js';
 import { readFileSync } from 'fs';
 import { z } from 'zod';
 import { VersionManager } from './version.js';
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
-import { CrossReferenceAnalyzerImpl } from './cross-reference-analyzer.js';
-import { CodeStorage } from './code-storage.js';
-import { ChromaVectorStore } from './chroma-vector-store.js';
-import { EmbeddingService } from './embedding-service.js';
+import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer.js';
+import { CodeStorage } from '../storage/code-storage.js';
+import { ChromaVectorStore } from '../ai/chroma-vector-store.js';
+import { EmbeddingService } from '../ai/embedding-service.js';
 
 export interface MCPServerConfig {
   serverName: string;

@@ -1,20 +1,20 @@
 
 import { Command } from 'commander';
-import { ContextEngine } from './index.js';
-import { ConfigManager } from './config.js';
-import { getGlobalLogger, LogLevel } from './logger.js';
+import { ContextEngine } from '../core/index.js';
+import { ConfigManager } from '../core/config.js';
+import { getGlobalLogger, LogLevel } from '../core/logger.js';
 import path from 'path';
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
-import { SemanticSearch } from './semantic-search.js';
-import { ChromaVectorStore } from './chroma-vector-store.js';
-import { EmbeddingService } from './embedding-service.js';
-import { CodeParser } from './code-parser.js';
-import { SearchResult } from './types.js';
-import { VersionManager } from './version.js';
-import { MemoryManager } from './memory-manager.js';
-import { MemoryConfigManager } from './memory-config.js';
-import { CrossReferenceAnalyzerImpl } from './cross-reference-analyzer.js';
-import { CodeStorage } from './code-storage.js';
+import { SemanticSearch } from '../ai/semantic-search.js';
+import { ChromaVectorStore } from '../ai/chroma-vector-store.js';
+import { EmbeddingService } from '../ai/embedding-service.js';
+import { CodeParser } from '../analysis/code-parser.js';
+import { SearchResult } from '../core/types.js';
+import { VersionManager } from '../mcp/version.js';
+import { MemoryManager } from '../mcp/memory-manager.js';
+import { MemoryConfigManager } from '../mcp/memory-config.js';
+import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer.js';
+import { CodeStorage } from '../storage/code-storage.js';
 
 const program = new Command();
 const logger = getGlobalLogger();
@@ -895,7 +895,7 @@ complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "test-c
    * Start MCP server
    */
   private async startServer(options: any): Promise<void> {
-    const { MCPServer } = await import('./mcp-server.js');
+    const { MCPServer } = await import('../mcp/mcp-server.js');
     const branding = VersionManager.getBranding();
     
     console.log(`Starting ${branding.displayName} MCP Server v${branding.version}...`);

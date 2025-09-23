@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { CLIInterface } from './cli.js';
-import { getGlobalLogger } from './logger.js';
-import { VersionManager } from './version.js';
+import { getGlobalLogger } from '../core/logger.js';
+import { VersionManager } from '../mcp/version.js';
 
 console.log(`[DIAGNOSTIC] 42Context Engine starting in CWD: ${process.cwd()}`);
 const logger = getGlobalLogger();

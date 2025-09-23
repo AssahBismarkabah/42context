@@ -1,5 +1,5 @@
-import { EmbeddingService } from '../src/embedding-service';
-import { CodeChunk } from '../src/types';
+import { EmbeddingService } from '../src/ai/embedding-service';
+import { CodeChunk } from '../src/core/types';
 
 async function testEmbeddingServiceWithOptimizer() {
   console.log(' Testing Embedding Service with Optimizer Integration...\n');

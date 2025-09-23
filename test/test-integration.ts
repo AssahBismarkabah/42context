@@ -1,6 +1,6 @@
-import { FileWatcher, FileWatcherOptions } from '../src/file-watcher';
-import { CodeStorage } from '../src/code-storage';
-import { createSemanticSearchService } from '../src/semantic-search';
+import { FileWatcher, FileWatcherOptions } from '../src/storage/file-watcher';
+import { CodeStorage } from '../src/storage/code-storage';
+import { createSemanticSearchService } from '../src/ai/semantic-search';
 import * as fs from 'fs';
 import * as path from 'path';
 

@@ -1,4 +1,4 @@
-import { FileWatcher } from '../src/file-watcher.js';
+import { FileWatcher } from '../src/storage/file-watcher.js';
 import fs from 'fs/promises';
 import path from 'path';
 

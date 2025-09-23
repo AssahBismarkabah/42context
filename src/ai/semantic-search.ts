@@ -1,14 +1,14 @@
-import { CodeParser } from './code-parser';
+import { CodeParser } from '../analysis/code-parser';
 import { EmbeddingService } from './embedding-service';
 import { ChromaVectorStore } from './chroma-vector-store';
-import { CodeStorage } from './code-storage';
+import { CodeStorage } from '../storage/code-storage';
 import {
   CodeVector,
   SearchOptions,
   SearchResult,
   SemanticSearchConfig,
   FileChangeEvent
-} from './types';
+} from '../core/types';
 
 export class SemanticSearch {
   private parser: CodeParser;
@@ -18,7 +18,7 @@ export class SemanticSearch {
   private config: SemanticSearchConfig;
   private isInitialized: boolean = false;
 
-  constructor(config: SemanticSearchConfig = {}, codeStorageConfig?: import('./config.js').CodeStorageConfig) {
+  constructor(config: SemanticSearchConfig = {}, codeStorageConfig?: import('../core/config.js').CodeStorageConfig) {
     this.config = {
       embeddingModel: 'Xenova/all-MiniLM-L6-v2',
       vectorStore: 'chroma',

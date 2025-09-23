@@ -2,18 +2,18 @@
   "name": "42Context-engine",
   "version": "0.1.0",
   "description": "42Context Engine - MCP server for semantic code search and analysis",
-  "main": "dist/src/main.js",
+  "main": "dist/src/core/main.js",
   "bin": {
-    "mcp-context-engine": "dist/src/main.js",
-    "42context": "dist/src/cli-main.js"
+    "mcp-context-engine": "dist/src/core/main.js",
+    "42context": "dist/src/cli/cli-main.js"
   },
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "start": "node dist/src/main.js",
-    "cli": "node --expose-gc dist/src/cli-main.js",
-    "dev": "tsc && node --watch dist/src/main.js",
-    "dev:cli": "tsx --expose-gc src/cli-main.ts",
+    "start": "node dist/src/core/main.js",
+    "cli": "node --expose-gc dist/src/cli/cli-main.js",
+    "dev": "tsc && node --watch dist/src/core/main.js",
+    "dev:cli": "tsx --expose-gc src/cli/cli-main.ts",
     "test": "tsc && node --test dist/test/*.js",
     "test:watch": "tsc && node --test --watch",
     "clean": "rm -rf dist"

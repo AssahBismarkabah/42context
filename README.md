@@ -92,13 +92,13 @@ The engine features an advanced memory management system designed to handle larg
 
 ```bash
 # Basic usage with GC enabled (required)
-node --expose-gc dist/src/cli-main.js index /path/to/codebase --recursive
+node --expose-gc dist/src/cli/cli-main.js index /path/to/codebase --recursive
 
 # With memory profile selection
-MEMORY_PROFILE=conservative node --expose-gc dist/src/cli-main.js index /path/to/codebase
+MEMORY_PROFILE=conservative node --expose-gc dist/src/cli/cli-main.js index /path/to/codebase
 
 # Monitor memory usage
-MEMORY_PROFILE=conservative node --expose-gc dist/src/cli-main.js stats
+MEMORY_PROFILE=conservative node --expose-gc dist/src/cli/cli-main.js stats
 ```
 
 #### Performance Results
@@ -123,7 +123,7 @@ MCP client configuration for MCP Local Context Engine:
       "command": "node",
       "args": [
         "--expose-gc",
-        "/path/to/dist/src/cli-main.js",
+        "/path/to/dist/src/cli/cli-main.js",
         "server",
         "--transport",
         "stdio"
@@ -196,7 +196,7 @@ The engine provides a comprehensive three-tier configuration system with automat
 
 ```bash
 # Use custom configuration file
-node dist/src/cli-main.js --config my-config.json search "authentication"
+node dist/src/cli/cli-main.js --config my-config.json search "authentication"
 ```
 
 **2. Environment Variables**
@@ -209,7 +209,7 @@ export DEV_CONTEXT_EMBEDDING_BATCH_SIZE=128
 export DEV_CONTEXT_VECTOR_STORE_HOST=chromadb.example.com
 
 # Run with environment variables
-node dist/src/cli-main.js search "authentication"
+node dist/src/cli/cli-main.js search "authentication"
 ```
 
 For detailed configuration management, see the `config` command in the CLI Commands Reference.
@@ -220,51 +220,51 @@ For detailed configuration management, see the `config` command in the CLI Comma
 
 | Command      | Description                                      | Arguments                          | Key Options                                                                 | Usage Example                                                                 |
 |--------------|--------------------------------------------------|------------------------------------|-----------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| **`search`** | Semantic code search with AI-powered similarity matching | `<query>`: Search query string    | `-l, --language <lang>`: Filter by language<br>`-t, --type <type>`: Filter by code type<br>`-f, --file <path>`: Filter by file path<br>`-k, --top-k <n>`: Results count (default: 5)<br>`-s, --min-similarity <score>`: Min similarity (default: 0.2)<br>`--format <format>`: Output format (json, table, plain) | `node dist/src/cli-main.js search "authentication flow" --language java --top-k 10` |
-| **`analyze`** | Analyze code structure, dependencies, and complexity | `[file-path]`: Specific file to analyze | `-d, --depth <number>`: Analysis depth (default: 1)<br>`--format <format>`: Output format (json, tree, plain) | `node dist/src/cli-main.js analyze src/memory-manager.ts --format json`      |
-| **`index`**  | Index files or directories for semantic search   | `[path]`: File/directory to index (default: current directory) | `-r, --recursive`: Index recursively<br>`-f, --force`: Force re-indexing   | `node dist/src/cli-main.js index src --recursive`                            |
-| **`index-xrefs`** | Build cross-reference indexes for advanced analysis | *None*                            | *No additional options*                                                    | `node dist/src/cli-main.js index-xrefs`                                      |
-| **`start`**  | Start real-time file watching with auto-reindexing | *None*                            | `-p, --project-path <path>`: Project path (default: current directory)     | `node dist/src/cli-main.js start --project-path /path/to/project`            |
-| **`stats`**  | Display system statistics and index information  | *None*                            | `--format <format>`: Output format (json, table)                           | `node dist/src/cli-main.js stats --format table`                             |
-| **`clear`**  | Clear indexes, vectors, and caches               | *None*                            | `--vectors`: Clear vector store<br>`--cache`: Clear embedding cache<br>`--all`: Clear everything | `node dist/src/cli-main.js clear --all`                                      |
-| **`config`** | Manage configuration settings                    | `<action>`: list, set, reset<br>`[key]`: Configuration key (for set)<br>`[value]`: New value (for set) | *No additional options*                                                    | `node dist/src/cli-main.js config list` |
-| **`server`** | Start MCP server for external client integration | *None*                            | `--transport <type>`: stdio or http<br>`--port <number>`: Port for HTTP transport | `node dist/src/cli-main.js server --transport stdio`                         |
-| **`debug`**  | Debugging and testing utilities                  | `<action>`: test-connection, parse<br>`[file]`: File path (for parse action) | *No additional options*                                                    | `node dist/src/cli-main.js debug test-connection`                            |
-| **`completion`** | Generate shell completion scripts            | `<shell>`: bash, zsh, fish        | *No additional options*                                                    | `node dist/src/cli-main.js completion bash`                                  |
+| **`search`** | Semantic code search with AI-powered similarity matching | `<query>`: Search query string    | `-l, --language <lang>`: Filter by language<br>`-t, --type <type>`: Filter by code type<br>`-f, --file <path>`: Filter by file path<br>`-k, --top-k <n>`: Results count (default: 5)<br>`-s, --min-similarity <score>`: Min similarity (default: 0.2)<br>`--format <format>`: Output format (json, table, plain) | `node dist/src/cli/cli-main.js search "authentication flow" --language java --top-k 10` |
+| **`analyze`** | Analyze code structure, dependencies, and complexity | `[file-path]`: Specific file to analyze | `-d, --depth <number>`: Analysis depth (default: 1)<br>`--format <format>`: Output format (json, tree, plain) | `node dist/src/cli/cli-main.js analyze src/memory-manager.ts --format json`      |
+| **`index`**  | Index files or directories for semantic search   | `[path]`: File/directory to index (default: current directory) | `-r, --recursive`: Index recursively<br>`-f, --force`: Force re-indexing   | `node dist/src/cli/cli-main.js index src --recursive`                            |
+| **`index-xrefs`** | Build cross-reference indexes for advanced analysis | *None*                            | *No additional options*                                                    | `node dist/src/cli/cli-main.js index-xrefs`                                      |
+| **`start`**  | Start real-time file watching with auto-reindexing | *None*                            | `-p, --project-path <path>`: Project path (default: current directory)     | `node dist/src/cli/cli-main.js start --project-path /path/to/project`            |
+| **`stats`**  | Display system statistics and index information  | *None*                            | `--format <format>`: Output format (json, table)                           | `node dist/src/cli/cli-main.js stats --format table`                             |
+| **`clear`**  | Clear indexes, vectors, and caches               | *None*                            | `--vectors`: Clear vector store<br>`--cache`: Clear embedding cache<br>`--all`: Clear everything | `node dist/src/cli/cli-main.js clear --all`                                      |
+| **`config`** | Manage configuration settings                    | `<action>`: list, set, reset<br>`[key]`: Configuration key (for set)<br>`[value]`: New value (for set) | *No additional options*                                                    | `node dist/src/cli/cli-main.js config list` |
+| **`server`** | Start MCP server for external client integration | *None*                            | `--transport <type>`: stdio or http<br>`--port <number>`: Port for HTTP transport | `node dist/src/cli/cli-main.js server --transport stdio`                         |
+| **`debug`**  | Debugging and testing utilities                  | `<action>`: test-connection, parse<br>`[file]`: File path (for parse action) | *No additional options*                                                    | `node dist/src/cli/cli-main.js debug test-connection`                            |
+| **`completion`** | Generate shell completion scripts            | `<shell>`: bash, zsh, fish        | *No additional options*                                                    | `node dist/src/cli/cli-main.js completion bash`                                  |
 
 ### Global Options (Available for All Commands)
 
 | Option               | Description                              | Example                                      |
 |----------------------|------------------------------------------|----------------------------------------------|
-| `-V, --version`     | Display version information             | `node dist/src/cli-main.js --version`       |
-| `-d, --debug`       | Enable debug mode with detailed logging | `node dist/src/cli-main.js --debug search "test"` |
-| `-c, --config <path>` | Specify custom configuration file      | `node dist/src/cli-main.js --config my-config.json search "test"` |
-| `-h, --help`        | Display help for specific command       | `node dist/src/cli-main.js search --help`   |
+| `-V, --version`     | Display version information             | `node dist/src/cli/cli-main.js --version`       |
+| `-d, --debug`       | Enable debug mode with detailed logging | `node dist/src/cli/cli-main.js --debug search "test"` |
+| `-c, --config <path>` | Specify custom configuration file      | `node dist/src/cli/cli-main.js --config my-config.json search "test"` |
+| `-h, --help`        | Display help for specific command       | `node dist/src/cli/cli-main.js search --help`   |
 
 ### Quick Start Examples
 
 ```bash
 # Basic semantic search
-node dist/src/cli-main.js search "authentication flow"
+node dist/src/cli/cli-main.js search "authentication flow"
 
 # Advanced search with filters
-node dist/src/cli-main.js search "user authentication" \
+node dist/src/cli/cli-main.js search "user authentication" \
   --language java \
   --type function \
   --top-k 10 \
   --min-similarity 0.5
 
 # Index codebase recursively
-node dist/src/cli-main.js index /path/to/code --recursive
+node dist/src/cli/cli-main.js index /path/to/code --recursive
 
 # Analyze specific file
-node dist/src/cli-main.js analyze src/memory-manager.ts --format json
+node dist/src/cli/cli-main.js analyze src/memory-manager.ts --format json
 
 # Start MCP server for IDE integration
-node dist/src/cli-main.js server --transport stdio
+node dist/src/cli/cli-main.js server --transport stdio
 
 # Clear all data and start fresh
-node dist/src/cli-main.js clear --all
+node dist/src/cli/cli-main.js clear --all
 ```
 
 ## License

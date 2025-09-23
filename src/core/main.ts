@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { MCPServer } from './mcp-server.js';
+import { MCPServer } from '../mcp/mcp-server.js';
 import { getGlobalLogger } from './logger.js';
-import { VersionManager } from './version.js';
+import { VersionManager } from '../mcp/version.js';
 
 const logger = getGlobalLogger();
 

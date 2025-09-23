@@ -2,8 +2,8 @@
  * Test for Semantic Search Service
  */
 
-import { createSemanticSearchService } from '../src/semantic-search';
-import { CodeChunk } from '../src/code-storage';
+import { createSemanticSearchService } from '../src/ai/semantic-search';
+import { CodeChunk } from '../src/storage/code-storage';
 
 // Test data - code chunks
 const testChunks: CodeChunk[] = [

@@ -1,5 +1,5 @@
-import { EmbeddingOptimizer } from '../src/embedding-optimizer';
-import { CodeChunk } from '../src/types';
+import { EmbeddingOptimizer } from '../src/ai/embedding-optimizer';
+import { CodeChunk } from '../src/core/types';
 
 async function testEmbeddingOptimizer() {
   console.log(' Testing Embedding Optimizer with Memory Management...\n');

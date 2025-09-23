@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { FileWatcher } from './file-watcher.js';
-import { SemanticSearch } from './semantic-search.js';
+import { FileWatcher } from '../storage/file-watcher.js';
+import { SemanticSearch } from '../ai/semantic-search.js';
 import { ConfigManager } from './config.js';
 import { getGlobalLogger, LogLevel } from './logger.js';
 import path from 'path';
@@ -24,7 +24,7 @@ export interface ContextEngineOptions {
  */
 export interface ContextEngineStats {
   isRunning: boolean;
-  fileWatcher: import('./file-watcher.js').FileWatcherStats | null;
+  fileWatcher: import('../storage/file-watcher.js').FileWatcherStats | null;
   uptime: number;
 }
 

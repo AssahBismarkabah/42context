@@ -6,7 +6,7 @@
 
 import { ChromaClient, Collection, IncludeEnum, IEmbeddingFunction } from 'chromadb';
 import { EmbeddingResult } from './embedding-service';
-import { CodeChunk } from './code-storage';
+import { CodeChunk } from '../storage/code-storage';
 
 /**
  * Simple embedding function for ChromaDB compatibility

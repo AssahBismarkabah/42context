@@ -2,9 +2,9 @@
  * Test for Vector Store Service
  */
 
-import { ChromaVectorStore } from '../src/chroma-vector-store';
-import { EmbeddingService } from '../src/embedding-service';
-import { CodeChunk } from '../src/types';
+import { ChromaVectorStore } from '../src/ai/chroma-vector-store';
+import { EmbeddingService } from '../src/ai/embedding-service';
+import { CodeChunk } from '../src/core/types';
 
 // Test data - code chunks
 const testChunks: CodeChunk[] = [

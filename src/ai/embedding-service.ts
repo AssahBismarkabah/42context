@@ -3,9 +3,9 @@
  * Uses local models for privacy-first semantic search with advanced memory management
  */
 
-import { CodeChunk, EmbeddingResult as BaseEmbeddingResult } from './types';
-import { MemoryManager } from './memory-manager';
-import { MemoryConfigManager } from './memory-config';
+import { CodeChunk, EmbeddingResult as BaseEmbeddingResult } from '../core/types';
+import { MemoryManager } from '../mcp/memory-manager';
+import { MemoryConfigManager } from '../mcp/memory-config';
 import { EmbeddingOptimizer } from './embedding-optimizer';
 
 /**

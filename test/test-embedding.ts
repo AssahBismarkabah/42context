@@ -2,8 +2,8 @@
  * Test for Embedding Service
  */
 
-import { createEmbeddingService } from '../src/embedding-service';
-import { CodeChunk } from '../src/code-storage';
+import { createEmbeddingService } from '../src/ai/embedding-service';
+import { CodeChunk } from '../src/storage/code-storage';
 
 // Test data - code chunks
 const testChunks: CodeChunk[] = [
