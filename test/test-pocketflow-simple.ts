@@ -4,7 +4,7 @@
  * This test focuses on the core PocketFlow orchestration without the complex code analysis agent
  */
 
-import { ConfigManager } from '../src/config';
+import { ConfigManager } from '../src/core/config';
 import { createPocketFlowMCPIntegration } from '../src/pocketflow';
 import { SemanticSearchAgent } from '../src/pocketflow/agents/semantic-search-agent';
 
@@ -13,23 +13,23 @@ async function testSimplePocketFlowIntegration() {
 
   try {
     // Step 1: Initialize configuration manager
-    console.log('📋 Initializing configuration manager...');
+    console.log(' Initializing configuration manager...');
     const configManager = new ConfigManager();
-    console.log('✅ Configuration manager initialized\n');
+    console.log(' Configuration manager initialized\n');
 
     // Step 2: Create and initialize PocketFlow integration
-    console.log('🔧 Creating PocketFlow MCP Integration...');
+    console.log(' Creating PocketFlow MCP Integration...');
     const pocketFlowIntegration = await createPocketFlowMCPIntegration(configManager);
-    console.log('✅ PocketFlow MCP Integration created and initialized\n');
+    console.log(' PocketFlow MCP Integration created and initialized\n');
 
     // Step 3: Test integration status
-    console.log('📊 Checking integration status...');
+    console.log(' Checking integration status...');
     const status = pocketFlowIntegration.getStatus();
     console.log('Integration Status:', JSON.stringify(status, null, 2));
-    console.log('✅ Integration status retrieved\n');
+    console.log(' Integration status retrieved\n');
 
     // Step 4: Test code search workflow
-    console.log('🔍 Testing code search workflow...');
+    console.log(' Testing code search workflow...');
     const searchParams = {
       query: 'authentication middleware',
       language: 'javascript',
@@ -44,7 +44,7 @@ async function testSimplePocketFlowIntegration() {
       executionTime: searchResult.executionTime,
       confidence: searchResult.confidence
     });
-    console.log('✅ Code search workflow completed\n');
+    console.log(' Code search workflow completed\n');
 
     // Step 5: Test semantic completion
     console.log('✨ Testing semantic completion...');
@@ -61,35 +61,35 @@ async function testSimplePocketFlowIntegration() {
       suggestionCount: completionResult.suggestions.length,
       confidence: completionResult.confidence
     });
-    console.log('✅ Semantic completion completed\n');
+    console.log(' Semantic completion completed\n');
 
     // Step 6: Test error handling
-    console.log('🚨 Testing error handling...');
+    console.log(' Testing error handling...');
     try {
       await pocketFlowIntegration.handleCodeSearch({ query: '' }); // Empty query should fail
-      console.log('❌ Error handling test failed - should have thrown an error');
+      console.log(' Error handling test failed - should have thrown an error');
     } catch (error) {
-      console.log('✅ Error handling working correctly - caught expected error');
+      console.log(' Error handling working correctly - caught expected error');
     }
     console.log('');
 
     // Step 7: Cleanup
-    console.log('🧹 Cleaning up resources...');
+    console.log(' Cleaning up resources...');
     await pocketFlowIntegration.cleanup();
-    console.log('✅ Cleanup completed\n');
+    console.log(' Cleanup completed\n');
 
-    console.log('🎉 Simple PocketFlow Integration test passed!');
+    console.log(' Simple PocketFlow Integration test passed!');
     return true;
 
   } catch (error) {
-    console.error('❌ Simple PocketFlow Integration test failed:', error);
+    console.error(' Simple PocketFlow Integration test failed:', error);
     return false;
   }
 }
 
 // Test individual semantic search agent
 async function testSemanticSearchAgent() {
-  console.log('🧪 Testing Semantic Search Agent...\n');
+  console.log(' Testing Semantic Search Agent...\n');
 
   try {
     // Create a simple semantic search agent
@@ -125,12 +125,12 @@ async function testSemanticSearchAgent() {
       hasResults: !!searchResult.data?.results,
       executionTime: searchResult.executionTime
     });
-    console.log('✅ Semantic Search Agent test completed\n');
+    console.log(' Semantic Search Agent test completed\n');
 
     return true;
 
   } catch (error) {
-    console.error('❌ Semantic Search Agent test failed:', error);
+    console.error(' Semantic Search Agent test failed:', error);
     return false;
   }
 }
@@ -147,9 +147,9 @@ async function runSimpleTests() {
   const agentTestsPassed = await testSemanticSearchAgent();
   if (!agentTestsPassed) {
     allTestsPassed = false;
-    console.log('❌ Semantic Search Agent tests failed\n');
+    console.log(' Semantic Search Agent tests failed\n');
   } else {
-    console.log('✅ Semantic Search Agent tests passed\n');
+    console.log(' Semantic Search Agent tests passed\n');
   }
 
   console.log('='.repeat(50));
@@ -159,9 +159,9 @@ async function runSimpleTests() {
   const integrationTestsPassed = await testSimplePocketFlowIntegration();
   if (!integrationTestsPassed) {
     allTestsPassed = false;
-    console.log('❌ Integration tests failed\n');
+    console.log(' Integration tests failed\n');
   } else {
-    console.log('✅ Integration tests passed\n');
+    console.log(' Integration tests passed\n');
   }
 
   console.log('='.repeat(50));
@@ -169,13 +169,13 @@ async function runSimpleTests() {
 
   // Final results
   if (allTestsPassed) {
-    console.log('🎉 All Simple PocketFlow Integration tests passed!');
-    console.log('✅ PocketFlow orchestration is working correctly');
-    console.log('✅ Semantic search agent is functional');
-    console.log('✅ MCP tool integration is operational');
-    console.log('✅ Error handling is working properly');
+    console.log(' All Simple PocketFlow Integration tests passed!');
+    console.log(' PocketFlow orchestration is working correctly');
+    console.log(' Semantic search agent is functional');
+    console.log(' MCP tool integration is operational');
+    console.log(' Error handling is working properly');
   } else {
-    console.log('❌ Some tests failed. Please check the logs above.');
+    console.log(' Some tests failed. Please check the logs above.');
   }
 
   return allTestsPassed;

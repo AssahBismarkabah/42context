@@ -13,8 +13,8 @@ import {
   AnalysisWorkflowResult,
   AgentContext
 } from './types';
-import { Logger, LogLevel, createLogger } from '../logger';
-import { ConfigManager } from '../config';
+import { Logger, LogLevel, createLogger } from '../core/logger';
+import { ConfigManager } from '../core/config';
 
 /**
  * PocketFlow MCP Integration Manager

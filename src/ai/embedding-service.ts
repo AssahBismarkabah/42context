@@ -99,7 +99,7 @@ export class EmbeddingService {
       
       // Try to use real Transformers.js first
       try {
-        const { createTransformersPipeline } = await import('./embedding-service-esm.js');
+        const { createTransformersPipeline } = await import('./embedding-service-esm');
         const pipeline = await createTransformersPipeline();
         
         this.model = await pipeline(
@@ -113,7 +113,7 @@ export class EmbeddingService {
         console.log('Using mock embedding model for testing');
         
         // Fall back to mock service
-        const { MockEmbeddingService } = await import('./embedding-service-mock.js');
+        const { MockEmbeddingService } = await import('./embedding-service-mock');
         const mockService = new MockEmbeddingService(this.options);
         await mockService.initialize();
         
@@ -160,25 +160,30 @@ export class EmbeddingService {
         normalize: true
       });
 
-        const vector = Array.from(output.data as number[]);
+        let result: EmbeddingResult;
+        try {
+          const vector = Array.from(output.data as number[]);
 
-        result = {
-          chunkId: chunk.id,
-          vector,
-          dimension: vector.length,
-          timestamp: Date.now(),
-          model: this.options.modelName
-        };
+          result = {
+            chunkId: chunk.id,
+            vector,
+            dimension: vector.length,
+            timestamp: Date.now(),
+            model: this.options.modelName
+          };
+        } catch (innerError) {
+          console.error(`[EmbeddingService] Error during embedding generation for chunk ${chunk.id}:`, innerError);
+          throw new Error(`Embedding generation failed: ${innerError}`);
+        }
+
+        // Cache the result
+        this.cacheEmbedding(result);
+        return result;
+      } catch (error) {
+        console.error(`[EmbeddingService] Failed to generate embedding for chunk ${chunk.id}:`, error);
+        throw new Error(`Embedding generation failed: ${error}`);
       }
-
-      // Cache the result
-      this.cacheEmbedding(result);
-      return result;
-    } catch (error) {
-      console.error(`[EmbeddingService] Failed to generate embedding for chunk ${chunk.id}:`, error);
-      throw new Error(`Embedding generation failed: ${error}`);
     }
-  }
 
   /**
    * Generate embeddings for multiple chunks in batches with memory management
@@ -304,12 +309,11 @@ export class EmbeddingService {
 
         // Convert to array and flatten
         return Array.from(output.data as number[]);
+      } catch (error) {
+        console.error(`[EmbeddingService] Failed to generate embedding for text:`, error);
+        throw new Error(`Text embedding generation failed: ${error}`);
       }
-    } catch (error) {
-      console.error(`[EmbeddingService] Failed to generate embedding for text:`, error);
-      throw new Error(`Text embedding generation failed: ${error}`);
     }
-  }
 
   /**
    * Prepare chunk text for embedding

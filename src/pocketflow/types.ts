@@ -2,7 +2,7 @@
  * PocketFlow Integration Types for MCP Local Context Engine
  */
 
-import { VectorSearchResult } from '../types';
+import { VectorSearchResult } from '../core/types';
 
 export interface PocketFlowConfig {
   orchestrator: 'local' | 'distributed';

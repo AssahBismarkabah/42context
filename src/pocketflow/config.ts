@@ -2,7 +2,7 @@
  * PocketFlow Configuration for MCP Local Context Engine
  */
 
-import { ConfigManager } from '../config';
+import { ConfigManager } from '../core/config';
 import { 
   PocketFlowConfig, 
   AgentConfig, 

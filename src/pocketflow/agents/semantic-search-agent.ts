@@ -4,8 +4,8 @@
 
 import { BaseAgent } from './base-agent';
 import { AgentContext, AgentResult, AgentConfig } from '../types';
-import { SemanticSearch } from '../../semantic-search';
-import { SearchOptions, SearchResult } from '../../types';
+import { SemanticSearch } from '../../ai/semantic-search';
+import { SearchOptions, SearchResult } from '../../core/types';
 
 export class SemanticSearchAgent extends BaseAgent {
   private semanticSearch: SemanticSearch | null = null;

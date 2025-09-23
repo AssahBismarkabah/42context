@@ -1,20 +1,20 @@
 
 import { Command } from 'commander';
-import { ContextEngine } from '../core/index.js';
-import { ConfigManager } from '../core/config.js';
-import { getGlobalLogger, LogLevel } from '../core/logger.js';
+import { ContextEngine } from '../core/index';
+import { ConfigManager } from '../core/config';
+import { getGlobalLogger, LogLevel } from '../core/logger';
 import path from 'path';
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
-import { SemanticSearch } from '../ai/semantic-search.js';
-import { ChromaVectorStore } from '../ai/chroma-vector-store.js';
-import { EmbeddingService } from '../ai/embedding-service.js';
-import { CodeParser } from '../analysis/code-parser.js';
-import { SearchResult } from '../core/types.js';
-import { VersionManager } from '../mcp/version.js';
-import { MemoryManager } from '../mcp/memory-manager.js';
-import { MemoryConfigManager } from '../mcp/memory-config.js';
-import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer.js';
-import { CodeStorage } from '../storage/code-storage.js';
+import { SemanticSearch } from '../ai/semantic-search';
+import { ChromaVectorStore } from '../ai/chroma-vector-store';
+import { EmbeddingService } from '../ai/embedding-service';
+import { CodeParser } from '../analysis/code-parser';
+import { SearchResult } from '../core/types';
+import { VersionManager } from '../mcp/version';
+import { MemoryManager } from '../mcp/memory-manager';
+import { MemoryConfigManager } from '../mcp/memory-config';
+import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer';
+import { CodeStorage } from '../storage/code-storage';
 
 const program = new Command();
 const logger = getGlobalLogger();
@@ -805,7 +805,7 @@ export class CLIInterface {
    */
   private async pocketflowCommand(action: string, query: string | undefined, options: any): Promise<void> {
     try {
-      const { PocketFlowMCPIntegration } = await import('./pocketflow/integration.js');
+      const { PocketFlowMCPIntegration } = await import('../pocketflow/integration');
       const pocketflow = new PocketFlowMCPIntegration(this.configManager);
       await pocketflow.initialize();
 
@@ -989,48 +989,6 @@ complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "test-c
     }
   }
 
-  /**
-   * Start MCP server
-   */
-  private async startServer(options: any): Promise<void> {
-    const { MCPServer } = await import('../mcp/mcp-server.js');
-    const branding = VersionManager.getBranding();
-    
-    console.log(`Starting ${branding.displayName} MCP Server v${branding.version}...`);
-    console.log(`Transport: ${options.transport}`);
-    
-    if (options.transport === 'http') {
-      console.log(`Host: ${options.host}`);
-      console.log(`Port: ${options.port}`);
-    }
-
-    const server = new MCPServer({
-      serverName: '42context-mcp-server',
-      version: VersionManager.getVersion(),
-      transportType: options.transport,
-      host: options.host,
-      port: parseInt(options.port)
-    });
-
-    await server.start();
-    
-    console.log(`${branding.displayName} MCP Server started successfully`);
-    console.log('Server is ready to accept MCP client connections');
-    console.log('Press Ctrl+C to stop the server');
-
-    // Handle graceful shutdown
-    process.on('SIGINT', async () => {
-      console.log(`Shutting down ${branding.displayName} MCP server...`);
-      await server.stop();
-      process.exit(0);
-    });
-
-    process.on('SIGTERM', async () => {
-      console.log(`Shutting down ${branding.displayName} MCP server...`);
-      await server.stop();
-      process.exit(0);
-    });
-  }
 }
 export default CLIInterface;
 

@@ -4,40 +4,40 @@
  * This test focuses only on the working semantic search functionality
  */
 
-import { ConfigManager } from '../src/config';
+import { ConfigManager } from '../src/core/config';
 import { createPocketFlowConfigManager } from '../src/pocketflow/config';
 import { PocketFlowOrchestrator } from '../src/pocketflow/orchestrator';
 import { SemanticSearchAgent } from '../src/pocketflow/agents/semantic-search-agent';
-import { createLogger, LogLevel } from '../src/logger';
+import { createLogger, LogLevel } from '../src/core/logger';
 
 async function testMinimalPocketFlow() {
-  console.log('🚀 Starting Minimal PocketFlow Integration Test...\n');
+  console.log(' Starting Minimal PocketFlow Integration Test...\n');
 
   try {
     // Step 1: Initialize configuration manager
-    console.log('📋 Initializing configuration manager...');
+    console.log(' Initializing configuration manager...');
     const configManager = new ConfigManager();
-    console.log('✅ Configuration manager initialized\n');
+    console.log(' Configuration manager initialized\n');
 
     // Step 2: Create PocketFlow config manager
-    console.log('🔧 Creating PocketFlow config manager...');
+    console.log(' Creating PocketFlow config manager...');
     const pocketFlowConfigManager = createPocketFlowConfigManager(configManager);
-    console.log('✅ PocketFlow config manager created\n');
+    console.log(' PocketFlow config manager created\n');
 
     // Step 3: Create orchestrator
-    console.log('🎯 Creating PocketFlow orchestrator...');
+    console.log(' Creating PocketFlow orchestrator...');
     const orchestrator = new PocketFlowOrchestrator(pocketFlowConfigManager);
     await orchestrator.initialize();
-    console.log('✅ PocketFlow orchestrator created and initialized\n');
+    console.log(' PocketFlow orchestrator created and initialized\n');
 
     // Step 4: Test orchestrator status
-    console.log('📊 Checking orchestrator status...');
+    console.log(' Checking orchestrator status...');
     const status = orchestrator.getStatus();
     console.log('Orchestrator Status:', JSON.stringify(status, null, 2));
-    console.log('✅ Orchestrator status retrieved\n');
+    console.log(' Orchestrator status retrieved\n');
 
     // Step 5: Test semantic search agent directly
-    console.log('🔍 Testing semantic search agent...');
+    console.log(' Testing semantic search agent...');
     const searchAgent = new SemanticSearchAgent({
       name: 'TestSemanticSearchAgent',
       type: 'semantic_search',
@@ -70,10 +70,10 @@ async function testMinimalPocketFlow() {
       hasResults: !!searchResult.data?.results,
       executionTime: searchResult.executionTime
     });
-    console.log('✅ Semantic search agent test completed\n');
+    console.log(' Semantic search agent test completed\n');
 
     // Step 6: Test orchestrator with semantic search
-    console.log('🎯 Testing orchestrator with semantic search...');
+    console.log(' Testing orchestrator with semantic search...');
     const workflowContext = {
       query: 'authentication middleware',
       language: 'javascript',
@@ -89,40 +89,40 @@ async function testMinimalPocketFlow() {
       executionTime: workflowResult.executionTime,
       confidence: workflowResult.confidence
     });
-    console.log('✅ Orchestrator workflow test completed\n');
+    console.log(' Orchestrator workflow test completed\n');
 
     // Step 7: Test error handling
-    console.log('🚨 Testing error handling...');
+    console.log(' Testing error handling...');
     try {
       await orchestrator.executeAgent('nonexistent_agent' as any, searchContext);
-      console.log('❌ Error handling test failed - should have thrown an error');
+      console.log(' Error handling test failed - should have thrown an error');
     } catch (error) {
-      console.log('✅ Error handling working correctly - caught expected error');
+      console.log(' Error handling working correctly - caught expected error');
     }
     console.log('');
 
     // Step 8: Cleanup
-    console.log('🧹 Cleaning up resources...');
+    console.log(' Cleaning up resources...');
     await orchestrator.cleanup();
-    console.log('✅ Cleanup completed\n');
+    console.log(' Cleanup completed\n');
 
-    console.log('🎉 Minimal PocketFlow Integration test passed!');
-    console.log('✅ PocketFlow orchestration is working correctly');
-    console.log('✅ Semantic search agent is functional');
-    console.log('✅ Workflow execution is operational');
-    console.log('✅ Error handling is working properly');
+    console.log(' Minimal PocketFlow Integration test passed!');
+    console.log(' PocketFlow orchestration is working correctly');
+    console.log(' Semantic search agent is functional');
+    console.log(' Workflow execution is operational');
+    console.log(' Error handling is working properly');
     
     return true;
 
   } catch (error) {
-    console.error('❌ Minimal PocketFlow Integration test failed:', error);
+    console.error(' Minimal PocketFlow Integration test failed:', error);
     return false;
   }
 }
 
 // Create a simple integration test
 async function testSimpleIntegration() {
-  console.log('🔗 Testing Simple Integration...\n');
+  console.log(' Testing Simple Integration...\n');
 
   try {
     // Create logger
@@ -150,18 +150,18 @@ async function testSimpleIntegration() {
       maxConcurrentTasks: searchAgentConfig.maxConcurrentTasks
     });
 
-    console.log('✅ Simple integration test completed');
+    console.log(' Simple integration test completed');
     return true;
 
   } catch (error) {
-    console.error('❌ Simple integration test failed:', error);
+    console.error(' Simple integration test failed:', error);
     return false;
   }
 }
 
 // Main test runner
 async function runMinimalTests() {
-  console.log('🎯 Starting Minimal PocketFlow Integration Test Suite\n');
+  console.log(' Starting Minimal PocketFlow Integration Test Suite\n');
   console.log('='.repeat(50));
   console.log('');
 
@@ -171,9 +171,9 @@ async function runMinimalTests() {
   const simpleTestsPassed = await testSimpleIntegration();
   if (!simpleTestsPassed) {
     allTestsPassed = false;
-    console.log('❌ Simple integration tests failed\n');
+    console.log(' Simple integration tests failed\n');
   } else {
-    console.log('✅ Simple integration tests passed\n');
+    console.log(' Simple integration tests passed\n');
   }
 
   console.log('='.repeat(50));
@@ -183,9 +183,9 @@ async function runMinimalTests() {
   const pocketFlowTestsPassed = await testMinimalPocketFlow();
   if (!pocketFlowTestsPassed) {
     allTestsPassed = false;
-    console.log('❌ PocketFlow tests failed\n');
+    console.log(' PocketFlow tests failed\n');
   } else {
-    console.log('✅ PocketFlow tests passed\n');
+    console.log(' PocketFlow tests passed\n');
   }
 
   console.log('='.repeat(50));
@@ -193,13 +193,13 @@ async function runMinimalTests() {
 
   // Final results
   if (allTestsPassed) {
-    console.log('🎉 All Minimal PocketFlow Integration tests passed!');
-    console.log('✅ PocketFlow orchestration framework is integrated');
-    console.log('✅ Configuration management is working');
-    console.log('✅ Semantic search agent is operational');
-    console.log('✅ Workflow execution is functional');
+    console.log(' All Minimal PocketFlow Integration tests passed!');
+    console.log(' PocketFlow orchestration framework is integrated');
+    console.log(' Configuration management is working');
+    console.log(' Semantic search agent is operational');
+    console.log(' Workflow execution is functional');
   } else {
-    console.log('❌ Some tests failed. Please check the logs above.');
+    console.log(' Some tests failed. Please check the logs above.');
   }
 
   return allTestsPassed;

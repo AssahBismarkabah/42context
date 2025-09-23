@@ -5,8 +5,8 @@
 
 import { BaseAgent } from './base-agent';
 import { AgentContext, AgentResult, AgentConfig } from '../types';
-import { CodeParser } from '../../code-parser';
-import { CodeChunk } from '../../types';
+import { CodeParser } from '../../analysis/code-parser';
+import { CodeChunk } from '../../core/types';
 import * as fs from 'fs/promises';
 
 export interface AnalysisOptions {
