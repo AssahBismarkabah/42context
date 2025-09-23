@@ -1,16 +1,26 @@
-# MCP Local Context Engine
+# 42Context Engine
 
 **Semantic Code Search and Analysis Platform**
 
-<div align="center">
-
-[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/AssahBismarkabah/42context)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector%20Database-purple?logo=docker)](https://hub.docker.com/_/chromadb)
-[![Tree-sitter](https://img.shields.io/badge/Tree--sitter-Multi--language%20Parsing-orange?logo=tree)](https://tree-sitter.github.io/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue)](./LICENSE)
-
+<div>
+  <a href="https://github.com/AssahBismarkabah/42context">
+    <img src="https://img.shields.io/badge/GitHub-Repository-blue?logo=github" alt="GitHub Repository">
+  </a>
+  <a href="https://nodejs.org/">
+    <img src="https://img.shields.io/badge/Node.js-18+-green?logo=node.js" alt="Node.js">
+  </a>
+  <a href="https://www.typescriptlang.org/">
+    <img src="https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript" alt="TypeScript">
+  </a>
+  <a href="https://hub.docker.com/_/chromadb">
+    <img src="https://img.shields.io/badge/ChromaDB-Vector%20Database-purple?logo=docker" alt="ChromaDB">
+  </a>
+  <a href="https://tree-sitter.github.io/">
+    <img src="https://img.shields.io/badge/Tree--sitter-Multi--language%20Parsing-orange?logo=tree" alt="Tree-sitter">
+  </a>
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="License">
+  </a>
 </div>
 
 42Context Local Context Engine is a comprehensive semantic code search and analysis tool that leverages MCP for intelligent code understanding. 
