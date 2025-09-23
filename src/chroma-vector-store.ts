@@ -200,9 +200,20 @@ export class ChromaVectorStore implements VectorStore {
     }
 
     try {
-      // Delete all vectors in the collection
-      await this.collection.delete({});
-      console.log(`Cleared all vectors from ChromaDB collection '${this.collectionName}'`);
+      // Try to delete all vectors by deleting the collection and recreating it
+      const collectionName = this.collectionName;
+      const metadata = this.collection.metadata;
+      
+      // Delete the collection
+      await this.client.deleteCollection({ name: collectionName });
+      console.log(`Deleted ChromaDB collection '${collectionName}'`);
+      
+      // Recreate the collection
+      this.collection = await this.client.createCollection({
+        name: collectionName,
+        metadata: metadata || { 'hnsw:space': 'cosine' }
+      });
+      console.log(`Recreated ChromaDB collection '${collectionName}'`);
     } catch (error) {
       console.error('Failed to clear ChromaDB collection:', error);
       throw error;

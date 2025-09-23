@@ -321,7 +321,7 @@ export class CodeParser {
    */
   private createCodeChunk(
     node: ParserType.SyntaxNode,
-    filePath: string, 
+    filePath: string,
     language: SupportedLanguage,
     content: string
   ): CodeChunk | null {
@@ -337,6 +337,18 @@ export class CodeParser {
       const documentation = this.extractDocumentation(node, content);
       const dependencies = this.extractDependencies(node, language);
       
+      // Extract metadata for classes and interfaces
+      let metadata: Record<string, any> | undefined;
+      if (chunkType === 'class' || chunkType === 'interface') {
+        metadata = {
+          superclass: this.extractSuperclass(node, language),
+          interfaces: this.extractImplementedInterfaces(node, language),
+          modifiers: this.extractModifiers(node, language),
+          fields: this.extractFields(node, language),
+          imports: this.extractImports(node, language)
+        };
+      }
+      
       return {
         id: `${filePath}:${node.startPosition.row}:${node.startPosition.column}`,
         type: chunkType,
@@ -351,7 +363,7 @@ export class CodeParser {
         signature,
         documentation,
         dependencies,
-        metadata: undefined,
+        metadata,
         timestamp: Date.now()
       };
     } catch (error) {
@@ -381,7 +393,38 @@ export class CodeParser {
     // Look for common name patterns in different languages
     const namePatterns = this.getNamePatterns(language);
     
-    for (const pattern of namePatterns) {
+    // For function/method declarations, we need to be more specific
+    if (node.type.includes('function') || node.type.includes('method')) {
+      // Look for the function name specifically, not just any identifier
+      const functionNameNode = this.findFunctionNameNode(node, language);
+      if (functionNameNode) {
+        return functionNameNode.text;
+      }
+    }
+    
+    // For class declarations, look for type_identifier specifically
+    if (node.type === 'class_declaration') {
+      const typeIdentifier = this.findNodeByType(node, 'type_identifier');
+      if (typeIdentifier) {
+        return typeIdentifier.text;
+      }
+    }
+    
+    // For interface declarations, look for type_identifier specifically
+    if (node.type === 'interface_declaration') {
+      const typeIdentifier = this.findNodeByType(node, 'type_identifier');
+      if (typeIdentifier) {
+        return typeIdentifier.text;
+      }
+    }
+    
+    // For other node types, use the original logic but prioritize certain patterns
+    // Prioritize type_identifier over identifier for better accuracy
+    const prioritizedPatterns = language === 'typescript' || language === 'javascript'
+      ? ['type_identifier', 'property_identifier', 'identifier']
+      : namePatterns;
+    
+    for (const pattern of prioritizedPatterns) {
       const nameNode = this.findNodeByType(node, pattern);
       if (nameNode) {
         return nameNode.text;
@@ -426,18 +469,101 @@ export class CodeParser {
    * Find node by type in AST subtree
    */
   private findNodeByType(node: ParserType.SyntaxNode, type: string): ParserType.SyntaxNode | null {
-    if (node.type === type) {
-      return node;
+    const queue = [...node.children];
+    while (queue.length > 0) {
+      const currentNode = queue.shift();
+      if (!currentNode) continue;
+      
+      if (currentNode.type === type) {
+        return currentNode;
+      }
+      
+      queue.push(...currentNode.children);
     }
     
-    for (const child of node.children) {
-      const found = this.findNodeByType(child, type);
-      if (found) {
-        return found;
+    return null;
+  }
+
+  /**
+   * Find the function name node specifically for function/method declarations
+   */
+  private findFunctionNameNode(node: ParserType.SyntaxNode, language: SupportedLanguage): ParserType.SyntaxNode | null {
+    // For TypeScript/JavaScript function declarations, look for the identifier
+    // that is directly in the function declaration, not in parameters
+    
+    // First, try to find the function name in the declaration structure
+    if (node.type === 'function_declaration') {
+      // Look for the identifier that is a direct child of the function node
+      for (const child of node.children) {
+        if (child.type === 'identifier') {
+          return child;
+        }
+      }
+    }
+    
+    if (node.type === 'method_definition') {
+      // Look for the property_identifier that is a direct child of the method node
+      for (const child of node.children) {
+        if (child.type === 'property_identifier') {
+          return child;
+        }
+      }
+    }
+    
+    // For class declarations, look for the class name
+    if (node.type === 'class_declaration') {
+      for (const child of node.children) {
+        if (child.type === 'type_identifier') {
+          return child;
+        }
+      }
+    }
+    
+    // Fallback: use the original logic but be more careful about parameter exclusion
+    const functionPatterns = this.getFunctionNamePatterns(language);
+    
+    for (const pattern of functionPatterns) {
+      const nameNodes = this.findAllNodesByType(node, pattern);
+      const paramsNode = this.findNodeByType(node, 'parameters') ||
+                        this.findNodeByType(node, 'formal_parameters');
+      
+      if (paramsNode && nameNodes.length > 0) {
+        // Find the first identifier that comes before the parameters
+        for (const nameNode of nameNodes) {
+          if (nameNode.startPosition.row < paramsNode.startPosition.row ||
+              (nameNode.startPosition.row === paramsNode.startPosition.row &&
+               nameNode.startPosition.column < paramsNode.startPosition.column)) {
+            return nameNode;
+          }
+        }
+      } else if (nameNodes.length > 0) {
+        // If no parameters, return the first name node
+        return nameNodes[0];
       }
     }
     
     return null;
+  }
+
+  /**
+   * Get function name patterns for different languages
+   */
+  private getFunctionNamePatterns(language: SupportedLanguage): string[] {
+    switch (language) {
+      case 'typescript':
+      case 'javascript':
+        return ['identifier', 'property_identifier'];
+      case 'python':
+        return ['identifier'];
+      case 'java':
+        return ['identifier'];
+      case 'go':
+        return ['identifier', 'field_identifier'];
+      case 'rust':
+        return ['identifier'];
+      default:
+        return ['identifier'];
+    }
   }
 
   /**
@@ -718,6 +844,111 @@ export class CodeParser {
     }
     
     return results;
+  }
+
+  /**
+   * Extract superclass from class declaration
+   */
+  private extractSuperclass(node: ParserType.SyntaxNode, _language: SupportedLanguage): string | undefined {
+    if (node.type !== 'class_declaration') {
+      return undefined;
+    }
+
+    // Look for extends clause
+    const extendsNode = this.findNodeByType(node, 'extends_clause');
+    if (extendsNode) {
+      // Find the type identifier in the extends clause
+      const typeIdentifier = this.findNodeByType(extendsNode, 'type_identifier');
+      if (typeIdentifier) {
+        return typeIdentifier.text;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Extract implemented interfaces from class declaration
+   */
+  private extractImplementedInterfaces(node: ParserType.SyntaxNode, _language: SupportedLanguage): string[] {
+    if (node.type !== 'class_declaration') {
+      return [];
+    }
+
+    const interfaces: string[] = [];
+
+    // Look for implements clause
+    const implementsNode = this.findNodeByType(node, 'implements_clause');
+    if (implementsNode) {
+      // Find all type identifiers in the implements clause
+      const typeIdentifiers = this.findAllNodesByType(implementsNode, 'type_identifier');
+      for (const typeIdentifier of typeIdentifiers) {
+        interfaces.push(typeIdentifier.text);
+      }
+    }
+
+    return interfaces;
+  }
+
+  /**
+   * Extract modifiers from class/method declaration
+   */
+  private extractModifiers(node: ParserType.SyntaxNode, _language: SupportedLanguage): string[] {
+    const modifiers: string[] = [];
+
+    // Look for modifier keywords
+    const modifierTypes = ['public', 'private', 'protected', 'static', 'abstract', 'final', 'readonly'];
+    
+    for (const child of node.children) {
+      if (modifierTypes.includes(child.type)) {
+        modifiers.push(child.text);
+      }
+    }
+
+    return modifiers;
+  }
+
+  /**
+   * Extract fields from class declaration
+   */
+  private extractFields(node: ParserType.SyntaxNode, language: SupportedLanguage): Array<{name: string, type: string}> {
+    const fields: Array<{name: string, type: string}> = [];
+
+    if (node.type !== 'class_declaration') {
+      return fields;
+    }
+
+    // Look for field declarations
+    const fieldDeclarations = this.findAllNodesByType(node, 'field_declaration');
+    for (const fieldDecl of fieldDeclarations) {
+      const fieldName = this.extractNodeName(fieldDecl, language);
+      if (fieldName && fieldName !== 'anonymous') {
+        fields.push({
+          name: fieldName,
+          type: 'unknown' // Could be enhanced to extract actual type
+        });
+      }
+    }
+
+    return fields;
+  }
+
+  /**
+   * Extract imports from file
+   */
+  private extractImports(node: ParserType.SyntaxNode, language: SupportedLanguage): string[] {
+    const imports: string[] = [];
+
+    // Look for import statements
+    const importPatterns = this.getImportPatterns(language);
+    for (const pattern of importPatterns) {
+      const importNodes = this.findAllNodesByType(node, pattern);
+      for (const importNode of importNodes) {
+        imports.push(importNode.text);
+      }
+    }
+
+    return imports;
   }
 
   /**

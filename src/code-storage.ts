@@ -80,6 +80,9 @@ class CodeStorage {
       const fs = require('fs');
       if (!fs.existsSync(this.options.storagePath)) {
         fs.mkdirSync(this.options.storagePath, { recursive: true });
+      } else {
+        // Load existing chunks from disk
+        await this.loadChunksFromDisk();
       }
     }
   }
@@ -143,10 +146,43 @@ class CodeStorage {
       const fs = require('fs');
       const path = require('path');
       
-      const chunkFile = path.join(this.options.storagePath, `${chunk.id}.json`);
+      // Sanitize the chunk ID to create a valid filename
+      const sanitizedId = chunk.id.replace(/[/\\:]/g, '_').replace(/\s+/g, '_');
+      const chunkFile = path.join(this.options.storagePath, `${sanitizedId}.json`);
       fs.writeFileSync(chunkFile, JSON.stringify(chunk));
     } catch (error) {
       console.error('Failed to persist chunk to disk:', error);
+    }
+  }
+
+  /**
+   * Load chunks from disk
+   */
+  private async loadChunksFromDisk(): Promise<void> {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const files = fs.readdirSync(this.options.storagePath);
+      console.log(`Loading ${files.length} chunks from disk...`);
+      
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const filePath = path.join(this.options.storagePath, file);
+          const chunkData = fs.readFileSync(filePath, 'utf8');
+          const chunk: CodeChunk = JSON.parse(chunkData);
+          
+          // Store in memory cache
+          this.memoryCache.set(chunk.id, chunk);
+          
+          // Update indices
+          this.updateIndices(chunk.id, chunk);
+        }
+      }
+      
+      console.log(`Loaded ${this.memoryCache.size} chunks from disk`);
+    } catch (error) {
+      console.error('Failed to load chunks from disk:', error);
     }
   }
 
@@ -282,6 +318,13 @@ class CodeStorage {
     this.fileIndex.clear();
     this.languageIndex.clear();
     this.typeIndex.clear();
+  }
+
+  /**
+   * Get the storage path
+   */
+  getStoragePath(): string {
+    return this.options.storagePath;
   }
 }
 

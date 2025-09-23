@@ -5,6 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+
 # Build outputs
 dist/
 build/
@@ -123,4 +124,8 @@ Thumbs.db
 *.local
 *.development
 *.production
+
 test-corpus/
+
+# Project Cache
+.code-storage/

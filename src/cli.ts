@@ -10,6 +10,11 @@ import { ChromaVectorStore } from './chroma-vector-store.js';
 import { EmbeddingService } from './embedding-service.js';
 import { CodeParser } from './code-parser.js';
 import { SearchResult } from './types.js';
+import { VersionManager } from './version.js';
+import { MemoryManager } from './memory-manager.js';
+import { MemoryConfigManager } from './memory-config.js';
+import { CrossReferenceAnalyzerImpl } from './cross-reference-analyzer.js';
+import { CodeStorage } from './code-storage.js';
 
 const program = new Command();
 const logger = getGlobalLogger();
@@ -32,12 +37,12 @@ export class CLIInterface {
    */
   setupCommands(): void {
     program
-      .name('mcp-context-engine')
-      .description('MCP-Based Local Development Context Engine')
-      .version('0.1.0')
+      .name('42context')
+      .description('42Context Engine - MCP-Based Semantic Code Search and Analysis Platform')
+      .version(VersionManager.getVersion())
       .option('-d, --debug', 'Enable debug mode')
       .option('-c, --config <path>', 'Configuration file path')
-      .hook('preAction', (thisCommand) => {
+      .hook('preAction', (thisCommand: any) => {
         const options = thisCommand.opts();
         if (options.debug) {
           logger.setLevel(LogLevel.DEBUG);
@@ -50,7 +55,7 @@ export class CLIInterface {
       .command('start')
       .description('Start the context engine with file watching')
       .option('-p, --project-path <path>', 'Project path to watch', process.cwd())
-      .action(async (options) => {
+      .action(async (options: any) => {
         try {
           await this.startEngine(options.projectPath, program.opts().debug);
         } catch (error) {
@@ -70,7 +75,7 @@ export class CLIInterface {
       .option('-k, --top-k <number>', 'Number of results to return', '5')
       .option('-s, --min-similarity <score>', 'Minimum similarity score', '0.2')
       .option('--format <format>', 'Output format (json, table, plain)', 'table')
-      .action(async (query, options) => {
+      .action(async (query: string, options: any) => {
         try {
           await this.searchCommand(query, options);
         } catch (error) {
@@ -86,7 +91,7 @@ export class CLIInterface {
       .argument('[file-path]', 'Specific file to analyze')
       .option('-d, --depth <number>', 'Analysis depth', '1')
       .option('--format <format>', 'Output format (json, tree, plain)', 'tree')
-      .action(async (filePath, options) => {
+      .action(async (filePath: string, options: any) => {
         try {
           await this.analyzeCommand(filePath, options);
         } catch (error) {
@@ -102,11 +107,24 @@ export class CLIInterface {
       .argument('[path]', 'File or directory to index', process.cwd())
       .option('-r, --recursive', 'Index recursively')
       .option('-f, --force', 'Force re-indexing of existing files')
-      .action(async (indexPath, options) => {
+      .action(async (indexPath: string, options: any) => {
         try {
           await this.indexCommand(indexPath, options);
         } catch (error) {
           console.error('Indexing failed:', error);
+          process.exit(1);
+        }
+      });
+
+    // Index X-Refs command - build cross-reference indexes
+    program
+      .command('index-xrefs')
+      .description('Build cross-reference indexes for analysis tools')
+      .action(async () => {
+        try {
+          await this.indexXrefsCommand();
+        } catch (error) {
+          console.error('Cross-reference indexing failed:', error);
           process.exit(1);
         }
       });
@@ -118,7 +136,7 @@ export class CLIInterface {
       .argument('<action>', 'Action: get, set, list, reset')
       .argument('[key]', 'Configuration key')
       .argument('[value]', 'Configuration value')
-      .action(async (action, key, value) => {
+      .action(async (action: string, key?: string, value?: string) => {
         try {
           await this.configCommand(action, key, value);
         } catch (error) {
@@ -132,7 +150,7 @@ export class CLIInterface {
       .command('stats')
       .description('Show system statistics')
       .option('--format <format>', 'Output format (json, table)', 'table')
-      .action(async (options) => {
+      .action(async (options: any) => {
         try {
           await this.statsCommand(options);
         } catch (error) {
@@ -148,7 +166,7 @@ export class CLIInterface {
       .option('--vectors', 'Clear vector store')
       .option('--cache', 'Clear embedding cache')
       .option('--all', 'Clear everything')
-      .action(async (options) => {
+      .action(async (options: any) => {
         try {
           await this.clearCommand(options);
         } catch (error) {
@@ -161,13 +179,29 @@ export class CLIInterface {
     program
       .command('debug')
       .description('Debugging utilities')
-      .argument('<action>', 'Action: parse, embed, test-connection')
-      .argument('[file]', 'File to debug')
-      .action(async (action, file) => {
+      .argument('<action>', 'Action: parse, embed, test-connection, memory, memory-profile')
+      .argument('[file]', 'File to debug or profile name')
+      .action(async (action: string, file?: string) => {
         try {
           await this.debugCommand(action, file);
         } catch (error) {
           console.error('Debug command failed:', error);
+          process.exit(1);
+        }
+      });
+
+    // Server command - start MCP server
+    program
+      .command('server')
+      .description('Start the MCP server for external client connections')
+      .option('-p, --port <port>', 'Server port (for HTTP transport)', '3000')
+      .option('-h, --host <host>', 'Server host (for HTTP transport)', 'localhost')
+      .option('-t, --transport <type>', 'Transport type (stdio, http)', 'stdio')
+      .action(async (options: any) => {
+        try {
+          await this.startServer(options);
+        } catch (error) {
+          console.error('Failed to start MCP server:', error);
           process.exit(1);
         }
       });
@@ -177,7 +211,7 @@ export class CLIInterface {
       .command('completion')
       .description('Generate shell completion script')
       .argument('<shell>', 'Shell type: bash, zsh, fish')
-      .action((shell) => {
+      .action((shell: string) => {
         this.generateCompletion(shell);
       });
   }
@@ -186,7 +220,8 @@ export class CLIInterface {
    * Start the context engine
    */
   private async startEngine(projectPath: string, debug: boolean): Promise<void> {
-    console.log(`Starting MCP Local Context Engine...`);
+    const branding = VersionManager.getBranding();
+    console.log(`Starting ${branding.displayName} v${branding.version}...`);
     console.log(`Project path: ${path.resolve(projectPath)}`);
     
     this.engine = new ContextEngine({
@@ -343,18 +378,41 @@ export class CLIInterface {
       return;
     }
 
-    // Index files in batches to avoid memory issues
-    const batchSize = 50;
+    // Initialize memory manager for large-scale indexing
+    const memoryManager = new MemoryManager({
+      maxHeapSizeMB: 1200,
+      gcThresholdMB: 600,
+      batchSizeReductionThresholdMB: 800,
+      emergencyThresholdMB: 1000,
+      enableForceGC: true
+    });
+
+    // Index files in batches with memory management
+    const initialBatchSize = 50;
     let processed = 0;
+    let currentBatchSize = initialBatchSize;
     
-    for (let i = 0; i < supportedFiles.length; i += batchSize) {
-      const batch = supportedFiles.slice(i, i + batchSize);
-      const batchNumber = Math.floor(i / batchSize) + 1;
-      const totalBatches = Math.ceil(supportedFiles.length / batchSize);
+    for (let i = 0; i < supportedFiles.length; i += currentBatchSize) {
+      // Check memory pressure and adjust batch size
+      const pressure = memoryManager.checkMemoryPressure();
+      if (pressure.shouldReduceBatchSize) {
+        currentBatchSize = Math.max(5, Math.floor(currentBatchSize * 0.5));
+        console.log(`[Memory] Reducing batch size to ${currentBatchSize} due to ${pressure.severity} pressure`);
+      }
+
+      const batch = supportedFiles.slice(i, i + currentBatchSize);
+      const batchNumber = Math.floor(i / currentBatchSize) + 1;
+      const totalBatches = Math.ceil(supportedFiles.length / currentBatchSize);
       
       console.log(`Processing batch ${batchNumber}/${totalBatches} (${batch.length} files)`);
       
-      await Promise.all(batch.map(async (filePath) => {
+      // Force GC before processing large batches
+      if (batch.length >= 25) {
+        await memoryManager.forceGarbageCollection(`batch_${batchNumber}_start`);
+      }
+      
+      // Process files sequentially to avoid memory spikes
+      for (const filePath of batch) {
         try {
           const content = readFileSync(filePath, 'utf-8');
           
@@ -362,19 +420,72 @@ export class CLIInterface {
           const config = this.configManager.getConfig();
           if (content.length > config.security.maxFileSize) {
             console.warn(`File too large, skipping: ${filePath}`);
-            return;
+            continue;
+          }
+
+          // Check memory before each file
+          const filePressure = memoryManager.checkMemoryPressure();
+          if (filePressure.shouldPause) {
+            console.log(`[Memory] Waiting for pressure reduction before processing ${filePath}`);
+            await memoryManager.waitForMemoryPressureReduction(10000);
           }
 
           await semanticSearch.indexFile(filePath, content);
           processed++;
           console.log(`✓ ${processed}/${supportedFiles.length}: ${filePath}`);
+          
+          // Small delay between files to prevent memory spikes
+          await new Promise(resolve => setTimeout(resolve, 10));
         } catch (error) {
           console.error(`✗ Failed to index file ${filePath}:`, error);
+          // Continue with other files instead of failing entire batch
         }
-      }));
+      }
+      
+      // Force GC after processing large batches
+      if (batch.length >= 25) {
+        await memoryManager.forceGarbageCollection(`batch_${batchNumber}_end`);
+        // Brief pause to allow GC to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
     }
     
     console.log(`Indexing completed: ${processed}/${supportedFiles.length} files processed`);
+  }
+
+  /**
+   * Index cross-references command implementation
+   */
+  private async indexXrefsCommand(): Promise<void> {
+    console.log('Building cross-reference indexes...');
+
+    const config = this.configManager.getConfig();
+    const vectorStore = new ChromaVectorStore(
+      config.vectorStore.collectionName,
+      config.vectorStore.host || 'localhost',
+      config.vectorStore.port || 8000,
+      config.vectorStore.authToken || 'test-token'
+    );
+    await vectorStore.initialize();
+
+    const embeddingService = new EmbeddingService();
+    await embeddingService.initialize();
+
+    const codeStorage = new CodeStorage({ persistToDisk: true });
+
+    const xrefAnalyzer = new CrossReferenceAnalyzerImpl(
+      codeStorage,
+      vectorStore,
+      embeddingService
+    );
+
+    // This is a private method, so we need to cast to any to call it.
+    // In a real application, we might expose a public method for this.
+    await (xrefAnalyzer as any).buildIndexes();
+
+    console.log('Cross-reference indexes built successfully');
+
+    await vectorStore.close();
   }
 
   /**
@@ -642,9 +753,46 @@ export class CLIInterface {
         }
         break;
       
+      case 'memory':
+        console.log('Memory Status Report:');
+        console.log('====================');
+        const memoryManager = new MemoryManager();
+        const report = memoryManager.getMemoryReport();
+        
+        console.log(`Current Memory: ${report.current.heapUsedMB}MB / ${report.current.heapTotalMB}MB`);
+        console.log(`Memory Trend: ${report.trend}`);
+        console.log(`Pressure Level: ${report.pressure.severity}`);
+        console.log(`GC Calls: ${report.gcStats.count}`);
+        console.log(`Time Since Last GC: ${Math.round(report.gcStats.timeSinceLastGC / 1000)}s`);
+        
+        if (report.recommendations.length > 0) {
+          console.log('\nRecommendations:');
+          report.recommendations.forEach(rec => console.log(`  - ${rec}`));
+        }
+        break;
+      
+      case 'memory-profile':
+        const profileName = file || 'default';
+        console.log(`Switching to memory profile: ${profileName}`);
+        const memoryConfigManager = MemoryConfigManager.getInstance();
+        
+        if (profileName === 'default') {
+          console.log('Using default memory configuration');
+        } else if (['conservative', 'aggressive', 'development'].includes(profileName)) {
+          memoryConfigManager.setProfile(profileName as any);
+          const newConfig = memoryConfigManager.getConfig();
+          console.log(`Profile applied: ${profileName}`);
+          console.log(`Max heap size: ${newConfig.thresholds.maxHeapSizeMB}MB`);
+          console.log(`Initial batch size: ${newConfig.batchProcessing.initialBatchSize}`);
+        } else {
+          console.error(`Unknown memory profile: ${profileName}`);
+          console.log('Available profiles: default, conservative, aggressive, development');
+        }
+        break;
+      
       default:
         console.error(`Unknown debug action: ${action}`);
-        console.log('Available actions: parse, embed, test-connection');
+        console.log('Available actions: parse, embed, test-connection, memory, memory-profile');
     }
   }
 
@@ -741,6 +889,49 @@ complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "test-c
         return `# Generic completion for ${shell}
 # Add your completion rules here`;
     }
+  }
+
+  /**
+   * Start MCP server
+   */
+  private async startServer(options: any): Promise<void> {
+    const { MCPServer } = await import('./mcp-server.js');
+    const branding = VersionManager.getBranding();
+    
+    console.log(`Starting ${branding.displayName} MCP Server v${branding.version}...`);
+    console.log(`Transport: ${options.transport}`);
+    
+    if (options.transport === 'http') {
+      console.log(`Host: ${options.host}`);
+      console.log(`Port: ${options.port}`);
+    }
+
+    const server = new MCPServer({
+      serverName: '42context-mcp-server',
+      version: VersionManager.getVersion(),
+      transportType: options.transport,
+      host: options.host,
+      port: parseInt(options.port)
+    });
+
+    await server.start();
+    
+    console.log(`${branding.displayName} MCP Server started successfully`);
+    console.log('Server is ready to accept MCP client connections');
+    console.log('Press Ctrl+C to stop the server');
+
+    // Handle graceful shutdown
+    process.on('SIGINT', async () => {
+      console.log(`Shutting down ${branding.displayName} MCP server...`);
+      await server.stop();
+      process.exit(0);
+    });
+
+    process.on('SIGTERM', async () => {
+      console.log(`Shutting down ${branding.displayName} MCP server...`);
+      await server.stop();
+      process.exit(0);
+    });
   }
 }
 export default CLIInterface;

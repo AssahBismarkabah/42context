@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "42context": {
+      "command": "node",
+      "args": [
+        "--expose-gc",
+        "/Users/adorsys123/dev/main/tools/projects/dev/42context/dist/src/cli-main.js",
+        "server",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
+    "42context-http": {
+      "url": "http://localhost:3001",
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

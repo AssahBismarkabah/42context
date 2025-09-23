@@ -1,9 +1,12 @@
 /**
  * Embedding Service for generating vector representations of code chunks
- * Uses local models for privacy-first semantic search
+ * Uses local models for privacy-first semantic search with advanced memory management
  */
 
-import { CodeChunk } from './types';
+import { CodeChunk, EmbeddingResult as BaseEmbeddingResult } from './types';
+import { MemoryManager } from './memory-manager';
+import { MemoryConfigManager } from './memory-config';
+import { EmbeddingOptimizer } from './embedding-optimizer';
 
 /**
  * Configuration for embedding service
@@ -14,18 +17,13 @@ export interface EmbeddingOptions {
   batchSize?: number;
   cacheSize?: number;
   device?: 'cpu' | 'gpu';
+  useOptimizer?: boolean; // Enable advanced memory optimization
 }
 
 /**
- * Embedding result with metadata
+ * Embedding result with metadata (re-export from types)
  */
-export interface EmbeddingResult {
-  chunkId: string;
-  vector: number[];
-  dimension: number;
-  timestamp: number;
-  model: string;
-}
+export type EmbeddingResult = BaseEmbeddingResult;
 
 /**
  * Batch embedding request
@@ -43,6 +41,9 @@ export class EmbeddingService {
   private embeddingCache: Map<string, EmbeddingResult>;
   private model: any; // Transformers.js pipeline
   private isModelLoaded: boolean = false;
+  private memoryManager: MemoryManager;
+  private embeddingOptimizer: EmbeddingOptimizer | null = null;
+  private useOptimizer: boolean = true; // Use optimizer by default for better memory management
 
   constructor(options: EmbeddingOptions = {}) {
     this.options = {
@@ -50,10 +51,43 @@ export class EmbeddingService {
       maxSequenceLength: options.maxSequenceLength || 512,
       batchSize: options.batchSize || 32,
       cacheSize: options.cacheSize || 10000,
-      device: options.device || 'cpu'
+      device: options.device || 'cpu',
+      useOptimizer: options.useOptimizer !== false // Default true
     };
 
     this.embeddingCache = new Map();
+    
+    // Use centralized memory configuration
+    const memoryConfig = MemoryConfigManager.getInstance().getConfig();
+    this.memoryManager = new MemoryManager({
+      maxHeapSizeMB: memoryConfig.thresholds.maxHeapSizeMB,
+      gcThresholdMB: memoryConfig.thresholds.gcThresholdMB,
+      batchSizeReductionThresholdMB: memoryConfig.thresholds.batchSizeReductionMB,
+      emergencyThresholdMB: memoryConfig.thresholds.emergencyThresholdMB,
+      enableForceGC: memoryConfig.garbageCollection.enabled,
+      gcInterval: memoryConfig.garbageCollection.intervalMs
+    });
+
+    // Initialize embedding optimizer for advanced memory management
+    if (this.options.useOptimizer) {
+      try {
+        this.embeddingOptimizer = new EmbeddingOptimizer({
+          maxConcurrentOperations: 1, // Conservative for stability
+          tensorCleanupIntervalMs: memoryConfig.delays.betweenEmbeddingsMs * 10, // 10x the delay
+          modelRefreshInterval: 300000, // 5 minutes default
+          enableResourcePooling: true,
+          maxResourcePoolSize: 3, // Conservative pool size
+          resourceTimeoutMs: memoryConfig.timeouts.batchTimeoutMs
+        });
+        console.log('[EmbeddingService] Embedding optimizer initialized for advanced memory management');
+        this.useOptimizer = true;
+      } catch (error) {
+        console.warn('[EmbeddingService] Failed to initialize embedding optimizer, falling back to basic mode:', error);
+        this.useOptimizer = false;
+      }
+    } else {
+      this.useOptimizer = false;
+    }
   }
 
   /**
@@ -61,20 +95,27 @@ export class EmbeddingService {
    */
   async initialize(): Promise<void> {
     try {
-      console.log(`Loading embedding model: ${this.options.modelName}`);
+      console.log(`[EmbeddingService] Initializing embedding service with model: ${this.options.modelName}`);
       
-      // Dynamic import for Transformers.js
-      const { pipeline } = await import('@xenova/transformers');
-      
-      this.model = await pipeline(
-        'feature-extraction',
-        this.options.modelName
-      );
+      if (this.useOptimizer && this.embeddingOptimizer) {
+        // Use optimizer for better memory management
+        await this.embeddingOptimizer.initialize();
+        this.isModelLoaded = true;
+        console.log('[EmbeddingService] Embedding optimizer ready');
+      } else {
+        // Fallback to direct model loading
+        const { pipeline } = await import('@xenova/transformers');
+        
+        this.model = await pipeline(
+          'feature-extraction',
+          this.options.modelName
+        );
 
-      this.isModelLoaded = true;
-      console.log(' Embedding model loaded successfully');
+        this.isModelLoaded = true;
+        console.log('[EmbeddingService] Direct model loading complete');
+      }
     } catch (error) {
-      console.error(' Failed to load embedding model:', error);
+      console.error('[EmbeddingService] Failed to initialize embedding service:', error);
       throw new Error(`Failed to initialize embedding service: ${error}`);
     }
   }
@@ -94,53 +135,138 @@ export class EmbeddingService {
     }
 
     try {
-      // Prepare text for embedding
-      const text = this.prepareChunkText(chunk);
-      
-      // Generate embedding
-      const output = await this.model(text, {
-        pooling: 'mean',
-        normalize: true
-      });
+      let result: EmbeddingResult;
 
-      // Convert to array and flatten
-      const vector = Array.from(output.data as number[]);
+      if (this.useOptimizer && this.embeddingOptimizer) {
+        // Use optimizer for better memory management
+        result = await this.embeddingOptimizer.generateEmbedding(chunk);
+      } else {
+        // Fallback to direct model usage
+        const text = this.prepareChunkText(chunk);
+        
+        const output = await this.model(text, {
+          pooling: 'mean',
+          normalize: true
+        });
 
-      const result: EmbeddingResult = {
-        chunkId: chunk.id,
-        vector,
-        dimension: vector.length,
-        timestamp: Date.now(),
-        model: this.options.modelName
-      };
+        const vector = Array.from(output.data as number[]);
+
+        result = {
+          chunkId: chunk.id,
+          vector,
+          dimension: vector.length,
+          timestamp: Date.now(),
+          model: this.options.modelName
+        };
+      }
 
       // Cache the result
       this.cacheEmbedding(result);
-
       return result;
     } catch (error) {
-      console.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
+      console.error(`[EmbeddingService] Failed to generate embedding for chunk ${chunk.id}:`, error);
       throw new Error(`Embedding generation failed: ${error}`);
     }
   }
 
   /**
-   * Generate embeddings for multiple chunks in batches
+   * Generate embeddings for multiple chunks in batches with memory management
    */
   async generateBatchEmbeddings(request: BatchEmbeddingRequest): Promise<EmbeddingResult[]> {
-    const { chunks, batchSize = this.options.batchSize } = request;
+    const { chunks } = request;
+
+    // Use optimizer if available for better memory management
+    if (this.useOptimizer && this.embeddingOptimizer) {
+      console.log(`[EmbeddingService] Using EmbeddingOptimizer for batch processing of ${chunks.length} chunks`);
+      const results = await this.embeddingOptimizer.generateBatchEmbeddings(chunks);
+      
+      // Cache results
+      results.forEach(result => this.cacheEmbedding(result));
+      
+      return results;
+    }
+
+    // Fallback to manual batch processing with memory management
+    return this.generateBatchEmbeddingsManual(request);
+  }
+
+  /**
+   * Manual batch processing with memory management (fallback method)
+   */
+  private async generateBatchEmbeddingsManual(request: BatchEmbeddingRequest): Promise<EmbeddingResult[]> {
+    const { chunks } = request;
     const results: EmbeddingResult[] = [];
 
-    console.log(`Generating embeddings for ${chunks.length} chunks in batches of ${batchSize}`);
+    // Optimize batch size based on memory pressure
+    const optimizedBatchSize = this.memoryManager.optimizeBatchSize(this.options.batchSize);
+    
+    console.log(`[EmbeddingService] Generating embeddings for ${chunks.length} chunks in batches of ${optimizedBatchSize}`);
 
-    for (let i = 0; i < chunks.length; i += batchSize) {
-      const batch = chunks.slice(i, i + batchSize);
-      console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(chunks.length / batchSize)}`);
+    // Get initial memory stats
+    const initialReport = this.memoryManager.getMemoryReport();
+    console.log(`[Memory] Initial: ${initialReport.current.heapUsedMB}MB, Trend: ${initialReport.trend}`);
 
-      const batchPromises = batch.map(chunk => this.generateEmbedding(chunk));
-      const batchResults = await Promise.all(batchPromises);
+    for (let i = 0; i < chunks.length; i += optimizedBatchSize) {
+      const batch = chunks.slice(i, i + optimizedBatchSize);
+      const batchNumber = Math.floor(i / optimizedBatchSize) + 1;
+      const totalBatches = Math.ceil(chunks.length / optimizedBatchSize);
+      
+      console.log(`Processing batch ${batchNumber}/${totalBatches}`);
+
+      // Check memory pressure before processing batch
+      const pressure = this.memoryManager.checkMemoryPressure();
+      if (pressure.shouldPause) {
+        console.log(`[Memory] Waiting for memory pressure reduction: ${pressure.severity}`);
+        const reduced = await this.memoryManager.waitForMemoryPressureReduction(30000);
+        if (!reduced) {
+          console.warn('[Memory] Memory pressure reduction timed out, continuing with caution');
+        }
+      }
+
+      if (pressure.shouldForceGC) {
+        await this.memoryManager.forceGarbageCollection(`batch_${batchNumber}`);
+      }
+
+      // Process batch with controlled concurrency
+      const batchResults: EmbeddingResult[] = [];
+      for (const chunk of batch) {
+        try {
+          // Check memory before each embedding
+          const currentPressure = this.memoryManager.checkMemoryPressure();
+          if (currentPressure.shouldPause) {
+            await this.memoryManager.waitForMemoryPressureReduction(5000);
+          }
+
+          const embedding = await this.generateEmbedding(chunk);
+          batchResults.push(embedding);
+          
+          // Small delay to prevent memory spikes from Transformers.js
+          if (batchResults.length % 10 === 0) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+        } catch (error) {
+          console.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
+          continue; // Continue with other chunks instead of failing entire batch
+        }
+      }
+      
       results.push(...batchResults);
+      
+      // Clear batch results to free memory immediately
+      batchResults.length = 0;
+      
+      // Periodic GC every few batches
+      if (batchNumber % 3 === 0) {
+        await this.memoryManager.forceGarbageCollection(`periodic_batch_${batchNumber}`);
+        // Brief pause to allow GC to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
+
+    // Final memory report
+    const finalReport = this.memoryManager.getMemoryReport();
+    console.log(`[Memory] Final: ${finalReport.current.heapUsedMB}MB, GC calls: ${finalReport.gcStats.count}`);
+    console.log(`[Memory] Memory increase: ${finalReport.current.heapUsedMB - initialReport.current.heapUsedMB}MB`);
 
     return results;
   }
@@ -153,17 +279,45 @@ export class EmbeddingService {
       await this.initialize();
     }
 
-    try {
-      // Generate embedding
-      const output = await this.model(text, {
-        pooling: 'mean',
-        normalize: true
-      });
+    // Add defensive check for undefined or null text
+    if (!text || typeof text !== 'string') {
+      console.error(`[EmbeddingService] Invalid text parameter:`, text);
+      throw new Error(`Text embedding generation failed: Invalid text parameter - expected string, got ${typeof text}: ${text}`);
+    }
 
-      // Convert to array and flatten
-      return Array.from(output.data as number[]);
+    try {
+      if (this.useOptimizer && this.embeddingOptimizer) {
+        // Use optimizer for text embedding
+        const result = await this.embeddingOptimizer.generateEmbedding({
+          id: 'text-embedding-' + Date.now(),
+          type: 'function',
+          name: 'text_embedding',
+          content: text,
+          filePath: 'text-query',
+          language: 'text',
+          startLine: 1,
+          endLine: 1,
+          startColumn: 1,
+          endColumn: text.length,
+          signature: undefined,
+          documentation: undefined,
+          dependencies: [],
+          metadata: undefined,
+          timestamp: Date.now()
+        });
+        return result.vector;
+      } else {
+        // Fallback to direct model usage
+        const output = await this.model(text, {
+          pooling: 'mean',
+          normalize: true
+        });
+
+        // Convert to array and flatten
+        return Array.from(output.data as number[]);
+      }
     } catch (error) {
-      console.error(`Failed to generate embedding for text:`, error);
+      console.error(`[EmbeddingService] Failed to generate embedding for text:`, error);
       throw new Error(`Text embedding generation failed: ${error}`);
     }
   }

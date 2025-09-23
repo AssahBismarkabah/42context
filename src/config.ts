@@ -74,6 +74,12 @@ export interface SecurityConfig {
   enableContentFiltering: boolean;
 }
 
+export interface CodeStorageConfig {
+  persistToDisk: boolean;
+  storagePath: string;
+  maxMemorySize: number;
+}
+
 export interface ContextEngineConfig {
   projectPath: string;
   embedding: EmbeddingConfig;
@@ -84,6 +90,7 @@ export interface ContextEngineConfig {
   logging: LoggingConfig;
   performance: PerformanceConfig;
   security: SecurityConfig;
+  codeStorage: CodeStorageConfig;
 }
 
 const DEFAULT_CONFIG: ContextEngineConfig = {
@@ -161,6 +168,11 @@ const DEFAULT_CONFIG: ContextEngineConfig = {
     allowedFileExtensions: ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.h', '.rs', '.go', '.rb', '.php'],
     maxFileSize: 5 * 1024 * 1024, // 5MB
     enableContentFiltering: true
+  },
+  codeStorage: {
+    persistToDisk: true,
+    storagePath: './.code-storage',
+    maxMemorySize: 50 * 1024 * 1024 // 50MB
   }
 };
 
@@ -239,6 +251,9 @@ export class ConfigManager {
     }
     if (userConfig.security) {
       merged.security = { ...merged.security, ...userConfig.security };
+    }
+    if (userConfig.codeStorage) {
+      merged.codeStorage = { ...merged.codeStorage, ...userConfig.codeStorage };
     }
 
     // Override top-level properties
@@ -348,6 +363,10 @@ export class ConfigManager {
 
   getSecurityConfig(): SecurityConfig {
     return this.config.security;
+  }
+
+  getCodeStorageConfig(): CodeStorageConfig {
+    return this.config.codeStorage;
   }
 
   updateConfig(updates: Partial<ContextEngineConfig>): void {

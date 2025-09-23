@@ -1,15 +1,42 @@
 #!/usr/bin/env node
 
-import { CLIInterface, program } from './cli.js';
+import { CLIInterface } from './cli.js';
+import { getGlobalLogger } from './logger.js';
+import { VersionManager } from './version.js';
 
-// Create and setup CLI
-const cli = new CLIInterface();
-cli.setupCommands();
+console.log(`[DIAGNOSTIC] 42Context Engine starting in CWD: ${process.cwd()}`);
+const logger = getGlobalLogger();
 
-// Parse command line arguments
-program.parse(process.argv);
+/**
+ * Main entry point for 42Context Engine CLI
+ * This provides the command-line interface for the context engine
+ */
+async function main() {
+  try {
+    const branding = VersionManager.getBranding();
+    logger.info(`Starting ${branding.displayName} CLI v${branding.version}...`);
 
-// If no command is provided, show help
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
+    // Create and setup CLI interface
+    const cli = new CLIInterface();
+    cli.setupCommands();
+
+    // Parse command line arguments
+    const { program } = await import('./cli.js');
+    await program.parseAsync(process.argv);
+    
+  } catch (error) {
+    logger.error('CLI command failed:', error);
+    console.error('Error:', error);
+    process.exit(1);
+  }
 }
+
+// Start the CLI
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('Unhandled error:', error);
+    process.exit(1);
+  });
+}
+
+export { main };

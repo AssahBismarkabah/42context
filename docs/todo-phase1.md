@@ -23,14 +23,14 @@
 - [x] Implement semantic search API supporting query embedding and nearest neighbors retrieval  
 
 ### 3. MCP Server Development  
-- [ ] Implement MCP transport layers: stdio and HTTP JSON-RPC server  
-- [ ] Define MCP server config management (YAML files, environment variables)  
-- [ ] Create Tool Registry to dynamically register MCP tools exposed to clients  
-- [ ] Develop core MCP tools following MCP API:  
+- [x] Implement MCP transport layers: stdio and HTTP JSON-RPC server  
+- [x] Define MCP server config management (YAML files, environment variables)  
+- [x] Create Tool Registry to dynamically register MCP tools exposed to clients  
+- [x] Develop core MCP tools following MCP API:  
     - `code_search` (semantic search query)  
     - `context_analysis` (complexity, dependencies)  
     - `semantic_completion` (code snippet completion)  
-- [ ] Build request routing and handling compliance with MCP spec  
+- [x] Build request routing and handling compliance with MCP spec  
 
 ### 4. PocketFlow Integration  
 - [ ] Integrate PocketFlow orchestration framework for multi-agent workflows  
@@ -42,7 +42,7 @@
 ### 5. CLI Interface and Developer Tools  
 - [x] Build MVP CLI tool for administrative tasks and debug commands  
 - [x] Implement CLI commands for search, analyze, completion, and config management  
-- [ ] Enable CLI to connect as an MCP client or directly invoke server tools  
+- [x] Enable CLI to connect as an MCP client or directly invoke server tools  
 
 ### 6. Testing & CI  
 - [ ] Set up unit testing framework for individual components (file watcher, parser, MCP server)  
