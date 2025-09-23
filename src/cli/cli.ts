@@ -1,20 +1,20 @@
 
 import { Command } from 'commander';
-import { ContextEngine } from '../core/index.js';
-import { ConfigManager } from '../core/config.js';
-import { getGlobalLogger, LogLevel } from '../core/logger.js';
+import { ContextEngine } from '../core/index';
+import { ConfigManager } from '../core/config';
+import { getGlobalLogger, LogLevel } from '../core/logger';
 import path from 'path';
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
-import { SemanticSearch } from '../ai/semantic-search.js';
-import { ChromaVectorStore } from '../ai/chroma-vector-store.js';
-import { EmbeddingService } from '../ai/embedding-service.js';
-import { CodeParser } from '../analysis/code-parser.js';
-import { SearchResult } from '../core/types.js';
-import { VersionManager } from '../mcp/version.js';
-import { MemoryManager } from '../mcp/memory-manager.js';
-import { MemoryConfigManager } from '../mcp/memory-config.js';
-import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer.js';
-import { CodeStorage } from '../storage/code-storage.js';
+import { SemanticSearch } from '../ai/semantic-search';
+import { ChromaVectorStore } from '../ai/chroma-vector-store';
+import { EmbeddingService } from '../ai/embedding-service';
+import { CodeParser } from '../analysis/code-parser';
+import { SearchResult } from '../core/types';
+import { VersionManager } from '../mcp/version';
+import { MemoryManager } from '../mcp/memory-manager';
+import { MemoryConfigManager } from '../mcp/memory-config';
+import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer';
+import { CodeStorage } from '../storage/code-storage';
 
 const program = new Command();
 const logger = getGlobalLogger();
@@ -190,18 +190,22 @@ export class CLIInterface {
         }
       });
 
-    // Server command - start MCP server
+    // PocketFlow command - test PocketFlow integration
     program
-      .command('server')
-      .description('Start the MCP server for external client connections')
-      .option('-p, --port <port>', 'Server port (for HTTP transport)', '3000')
-      .option('-h, --host <host>', 'Server host (for HTTP transport)', 'localhost')
-      .option('-t, --transport <type>', 'Transport type (stdio, http)', 'stdio')
-      .action(async (options: any) => {
+      .command('pocketflow')
+      .description('Test PocketFlow integration and workflows')
+      .argument('<action>', 'Action: test, search, analyze, workflow')
+      .argument('[query]', 'Query for search or analysis')
+      .option('-f, --file <path>', 'File path for analysis')
+      .option('-l, --language <lang>', 'Programming language filter')
+      .option('-k, --top-k <number>', 'Number of results to return', '5')
+      .option('-a, --analysis-type <type>', 'Analysis type: complexity, dependencies, patterns, security, quality', 'complexity')
+      .option('-w, --workflow <name>', 'Workflow name: code-search, code-analysis', 'code-search')
+      .action(async (action, query, options) => {
         try {
-          await this.startServer(options);
+          await this.pocketflowCommand(action, query, options);
         } catch (error) {
-          console.error('Failed to start MCP server:', error);
+          console.error('PocketFlow command failed:', error);
           process.exit(1);
         }
       });
@@ -792,7 +796,101 @@ export class CLIInterface {
       
       default:
         console.error(`Unknown debug action: ${action}`);
-        console.log('Available actions: parse, embed, test-connection, memory, memory-profile');
+        console.log('Available actions: parse, embed, test-connection');
+    }
+  }
+
+  /**
+   * PocketFlow command implementation
+   */
+  private async pocketflowCommand(action: string, query: string | undefined, options: any): Promise<void> {
+    try {
+      const { PocketFlowMCPIntegration } = await import('../pocketflow/integration');
+      const pocketflow = new PocketFlowMCPIntegration(this.configManager);
+      await pocketflow.initialize();
+
+      switch (action) {
+        case 'test':
+          const status = pocketflow.getStatus();
+          console.log('✓ PocketFlow integration test completed');
+          console.log('Status:', JSON.stringify(status, null, 2));
+          break;
+
+        case 'search':
+          if (!query) {
+            console.error('Please provide a search query');
+            return;
+          }
+          const searchResult = await pocketflow.handleCodeSearch({
+            query,
+            language: options.language,
+            top_k: parseInt(options.topK)
+          });
+          console.log('Search Results:');
+          console.log(JSON.stringify(searchResult, null, 2));
+          break;
+
+        case 'analyze':
+          if (!options.file) {
+            console.error('Please specify a file path with --file option');
+            return;
+          }
+          const analysisResult = await pocketflow.handleContextAnalysis({
+            file_path: options.file,
+            analysis_type: options.analysisType
+          });
+          console.log('Analysis Results:');
+          console.log(JSON.stringify(analysisResult, null, 2));
+          break;
+
+        case 'workflow':
+          if (!query) {
+            console.error('Please provide a workflow query');
+            return;
+          }
+          
+          let workflowResult;
+          if (options.workflow === 'code-search') {
+            workflowResult = await pocketflow.handleCodeSearch({
+              query,
+              language: options.language,
+              top_k: parseInt(options.topK),
+              include_pattern_analysis: true
+            });
+          } else if (options.workflow === 'code-analysis') {
+            if (!options.file) {
+              console.error('Please specify a file path with --file option for code analysis workflow');
+              return;
+            }
+            workflowResult = await pocketflow.handleContextAnalysis({
+              file_path: options.file,
+              analysis_type: options.analysisType,
+              detail_level: 'detailed'
+            });
+          } else {
+            console.error(`Unknown workflow: ${options.workflow}`);
+            console.log('Available workflows: code-search, code-analysis');
+            return;
+          }
+          
+          console.log('Workflow Results:');
+          console.log(JSON.stringify(workflowResult, null, 2));
+          break;
+
+        default:
+          console.error(`Unknown action: ${action}`);
+          console.log('Available actions: test, search, analyze, workflow');
+          console.log('Examples:');
+          console.log('  mcp-context-engine pocketflow test');
+          console.log('  mcp-context-engine pocketflow search "authentication" --language javascript');
+          console.log('  mcp-context-engine pocketflow analyze --file src/main.ts --analysis-type complexity');
+          console.log('  mcp-context-engine pocketflow workflow "user login" --workflow code-search');
+      }
+
+      await pocketflow.cleanup();
+    } catch (error) {
+      console.error('PocketFlow command failed:', error);
+      throw error;
     }
   }
 
@@ -891,48 +989,6 @@ complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "test-c
     }
   }
 
-  /**
-   * Start MCP server
-   */
-  private async startServer(options: any): Promise<void> {
-    const { MCPServer } = await import('../mcp/mcp-server.js');
-    const branding = VersionManager.getBranding();
-    
-    console.log(`Starting ${branding.displayName} MCP Server v${branding.version}...`);
-    console.log(`Transport: ${options.transport}`);
-    
-    if (options.transport === 'http') {
-      console.log(`Host: ${options.host}`);
-      console.log(`Port: ${options.port}`);
-    }
-
-    const server = new MCPServer({
-      serverName: '42context-mcp-server',
-      version: VersionManager.getVersion(),
-      transportType: options.transport,
-      host: options.host,
-      port: parseInt(options.port)
-    });
-
-    await server.start();
-    
-    console.log(`${branding.displayName} MCP Server started successfully`);
-    console.log('Server is ready to accept MCP client connections');
-    console.log('Press Ctrl+C to stop the server');
-
-    // Handle graceful shutdown
-    process.on('SIGINT', async () => {
-      console.log(`Shutting down ${branding.displayName} MCP server...`);
-      await server.stop();
-      process.exit(0);
-    });
-
-    process.on('SIGTERM', async () => {
-      console.log(`Shutting down ${branding.displayName} MCP server...`);
-      await server.stop();
-      process.exit(0);
-    });
-  }
 }
 export default CLIInterface;
 

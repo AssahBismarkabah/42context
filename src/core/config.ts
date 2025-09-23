@@ -1,6 +1,6 @@
 
 import { readFileSync, existsSync } from 'fs';
-import { LogLevel } from './logger.js';
+import { LogLevel } from './logger';
 
 export interface EmbeddingConfig {
   modelName: string;
