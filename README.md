@@ -1,6 +1,5 @@
 # 42Context Engine
 
-**Semantic Code Search and Analysis Platform**
 
 <div>
   <a href="https://github.com/AssahBismarkabah/42context">
@@ -23,7 +22,7 @@
   </a>
 </div>
 
-42Context Local Context Engine is a comprehensive semantic code search and analysis tool that leverages MCP for intelligent code understanding. 
+42Context Local Context Engine is a comprehensive code search and analysis tool that leverages MCP for intelligent code understanding. 
 it provides advanced AI-powered code search capabilities across codebase.
 
 Key features include natural language queries with vector similarity matching, real-time file system watching with automatic re-indexing, deep AST-based code structure analysis, high-performance similarity search, and full MCP server integration with stdio and HTTP transports. It also incorporates advanced memory management to handle large codebases (7,620+ files) without segmentation faults, along with a comprehensive CLI supporting shell completions.
