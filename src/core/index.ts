@@ -68,7 +68,7 @@ export class ContextEngine {
       this.logger.debug('Configuration loaded', { config });
 
       // Initialize semantic search service
-      this.semanticSearch = new SemanticSearch(config.semanticSearch, config.codeStorage);
+      this.semanticSearch = new SemanticSearch(config.semanticSearch);
       await this.semanticSearch.initialize();
       this.logger.info('Semantic search service initialized');
 

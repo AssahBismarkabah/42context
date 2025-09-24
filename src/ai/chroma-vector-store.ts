@@ -1,5 +1,6 @@
 import { ChromaClient, Collection } from 'chromadb';
 import { VectorStore, VectorSearchResult, CodeVector } from '../core/types';
+import path from 'path';
 
 export class ChromaVectorStore implements VectorStore {
   private client: ChromaClient;
@@ -51,14 +52,21 @@ export class ChromaVectorStore implements VectorStore {
       const ids = vectors.map(v => v.id);
       const embeddings = vectors.map(v => v.embedding);
       const documents = vectors.map(v => v.content);
-      const metadatas = vectors.map(v => ({
-        filePath: v.filePath,
-        language: v.language,
-        type: v.type,
-        lineStart: v.lineStart,
-        lineEnd: v.lineEnd,
-        timestamp: v.timestamp
-      }));
+      const metadatas = vectors.map(v => {
+        // Extract directory path from file path for tracking indexing completeness
+        const directory = v.filePath.substring(0, v.filePath.lastIndexOf(path.sep)) || v.filePath;
+        
+        return {
+          filePath: v.filePath,
+          language: v.language,
+          type: v.type,
+          lineStart: v.lineStart,
+          lineEnd: v.lineEnd,
+          timestamp: v.timestamp,
+          directory: directory, // Add directory metadata for completeness tracking
+          batchId: `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Add batch ID for tracking
+        };
+      });
 
       // Add vectors to collection
       await this.collection.add({
@@ -156,14 +164,21 @@ export class ChromaVectorStore implements VectorStore {
       const ids = vectors.map(v => v.id);
       const embeddings = vectors.map(v => v.embedding);
       const documents = vectors.map(v => v.content);
-      const metadatas = vectors.map(v => ({
-        filePath: v.filePath,
-        language: v.language,
-        type: v.type,
-        lineStart: v.lineStart,
-        lineEnd: v.lineEnd,
-        timestamp: v.timestamp
-      }));
+      const metadatas = vectors.map(v => {
+        // Extract directory path from file path for tracking indexing completeness
+        const directory = v.filePath.substring(0, v.filePath.lastIndexOf(path.sep)) || v.filePath;
+        
+        return {
+          filePath: v.filePath,
+          language: v.language,
+          type: v.type,
+          lineStart: v.lineStart,
+          lineEnd: v.lineEnd,
+          timestamp: v.timestamp,
+          directory: directory, // Add directory metadata for completeness tracking
+          batchId: `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Add batch ID for tracking
+        };
+      });
 
       // Update vectors in collection
       await this.collection.update({
@@ -190,6 +205,70 @@ export class ChromaVectorStore implements VectorStore {
       return { count };
     } catch (error) {
       console.error('Failed to get collection stats:', error);
+      throw error;
+    }
+  }
+
+  async getDirectoryStats(directory: string): Promise<{ count: number; lastIndexed?: number }> {
+    if (!this.collection) {
+      throw new Error('Collection not initialized. Call initialize() first.');
+    }
+
+    try {
+      // Use get() method to retrieve documents with metadata filtering
+      const results = await this.collection.get({
+        where: { directory: directory },
+        limit: 10000
+      });
+
+      const count = results.ids?.length || 0;
+      let lastIndexed = 0;
+
+      // Find the most recent timestamp
+      if (results.metadatas) {
+        for (const metadata of results.metadatas) {
+          const timestamp = (metadata as any)?.timestamp || 0;
+          if (timestamp > lastIndexed) {
+            lastIndexed = timestamp;
+          }
+        }
+      }
+
+      return {
+        count,
+        ...(lastIndexed > 0 && { lastIndexed })
+      };
+    } catch (error) {
+      console.error('Failed to get directory stats:', error);
+      throw error;
+    }
+  }
+
+  async getAllDirectories(): Promise<string[]> {
+    if (!this.collection) {
+      throw new Error('Collection not initialized. Call initialize() first.');
+    }
+
+    try {
+      // Use get() method to retrieve all documents and extract unique directories
+      const results = await this.collection.get({
+        limit: 10000
+      });
+
+      const directories = new Set<string>();
+      
+      if (results.metadatas) {
+        for (const metadata of results.metadatas) {
+          const directory = (metadata as any)?.directory;
+          if (directory) {
+            directories.add(directory);
+          }
+        }
+      }
+
+      return Array.from(directories).sort();
+    } catch (error) {
+      console.error('Failed to get all directories:', error);
       throw error;
     }
   }

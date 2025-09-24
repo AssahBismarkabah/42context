@@ -10,10 +10,7 @@ import { readFileSync } from 'fs';
 import { z } from 'zod';
 import { VersionManager } from './version.js';
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
-import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer.js';
-import { CodeStorage } from '../storage/code-storage.js';
-import { ChromaVectorStore } from '../ai/chroma-vector-store.js';
-import { EmbeddingService } from '../ai/embedding-service.js';
+
 
 export interface MCPServerConfig {
   serverName: string;
@@ -421,332 +418,38 @@ export class MCPServer {
         const semanticSearch = new SemanticSearch(this.configManager.getConfig().semanticSearch);
         await semanticSearch.initialize();
         
-        // Read current file content
-        const content = readFileSync(args.current_file, 'utf-8');
+        // Use filename-based search with better query generation
+        const fileName = args.current_file.split('/').pop() || '';
+        const baseName = fileName.replace(/\.[^/.]+$/, '');
         
-        // Search for related code based on the entire file content
-        const results = await semanticSearch.search(content, {
-          topK: 10,
-          filePath: args.current_file
+        // Better query generation: handle camelCase and PascalCase properly
+        let query = baseName
+          .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // Handle consecutive caps
+          .replace(/([a-z])([A-Z])/g, '$1 $2')       // Handle camelCase
+          .toLowerCase()
+          .trim();
+        
+        // If the query is too fragmented (like "j o s e parser"), try a simpler approach
+        if (query.split(' ').length > 4) {
+          query = baseName.toLowerCase();
+        }
+        
+        const results = await semanticSearch.search(query, {
+          topK: 15,
+          minSimilarity: 0.2  // Add minimum similarity threshold like code_search
         });
         
         await semanticSearch.close();
+        
+        // Return the full results object exactly like code_search does
         return results;
       }
     });
 
-    // Documentation generation tool
-    this.tools.set('generate_documentation', {
-      name: 'generate_documentation',
-      description: 'Generate documentation for code snippets',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          code_snippet: {
-            type: 'string',
-            description: 'Code to generate documentation for'
-          },
-          documentation_style: {
-            type: 'string',
-            description: 'Style of documentation',
-            enum: ['inline', 'separate', 'markdown'],
-            default: 'inline'
-          },
-          include_examples: {
-            type: 'boolean',
-            description: 'Include usage examples',
-            default: true
-          }
-        },
-        required: ['code_snippet']
-      },
-      handler: async (args) => {
-        const parser = new CodeParser();
-        
-        // Parse the code snippet to understand its structure
-        const tempFile = '/tmp/temp_code_snippet.js';
-        const fs = require('fs');
-        fs.writeFileSync(tempFile, args.code_snippet);
-        
-        try {
-          const chunks = await parser.parseFile(tempFile, args.code_snippet);
-          
-          return {
-            code_snippet: args.code_snippet,
-            documentation_style: args.documentation_style,
-            parsed_chunks: chunks.length,
-            documentation: this.generateDocumentation(chunks)
-          };
-        } finally {
-          // Clean up temp file
-          if (fs.existsSync(tempFile)) {
-            fs.unlinkSync(tempFile);
-          }
-        }
-      }
-    });
-
-    // Cross-reference analysis tools
-    this.registerCrossReferenceTools();
-  }
-
-  /**
-   * Register cross-reference analysis tools
-   */
-  private registerCrossReferenceTools(): void {
-    // Trace method calls tool
-    this.tools.set('trace_method_calls', {
-      name: 'trace_method_calls',
-      description: 'Trace method calls across the codebase to build call graphs and identify dependencies',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          method_name: {
-            type: 'string',
-            description: 'Name of the method to trace'
-          },
-          class_name: {
-            type: 'string',
-            description: 'Name of the class containing the method (optional)'
-          },
-          file_path: {
-            type: 'string',
-            description: 'Path to the file containing the method (optional)'
-          },
-          max_depth: {
-            type: 'number',
-            description: 'Maximum depth to trace (default: 10)',
-            minimum: 1,
-            maximum: 50,
-            default: 10
-          },
-          direction: {
-            type: 'string',
-            description: 'Direction of call tracing',
-            enum: ['callers', 'callees', 'both'],
-            default: 'both'
-          }
-        },
-        required: ['method_name']
-      },
-      handler: async (args) => {
-        const config = this.configManager.getConfig();
-        const codeStorage = new CodeStorage({
-          persistToDisk: config.codeStorage.persistToDisk,
-          storagePath: config.codeStorage.storagePath,
-          maxMemorySize: config.codeStorage.maxMemorySize
-        });
-        const vectorStore = new ChromaVectorStore(
-          config.vectorStore.collectionName,
-          config.vectorStore.host,
-          config.vectorStore.port,
-          config.vectorStore.authToken
-        );
-        const embeddingService = new EmbeddingService({
-          modelName: config.embedding.modelName,
-          batchSize: config.embedding.batchSize,
-          maxSequenceLength: 512,
-          cacheSize: 10000,
-          device: 'cpu',
-          useOptimizer: true
-        });
-        const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
-        
-        await vectorStore.initialize();
-        await embeddingService.initialize();
-        
-        try {
-          const result = await analyzer.traceMethodCalls({
-            methodName: args.method_name,
-            className: args.class_name,
-            filePath: args.file_path,
-            maxDepth: args.max_depth,
-            direction: args.direction
-          });
-          
-          return {
-            method_name: args.method_name,
-            call_graph: {
-              root: result.root,
-              total_methods: result.metadata.totalMethods,
-              max_depth: result.metadata.maxDepth,
-              circular_dependencies: result.metadata.circularDependencies,
-              entry_points: result.entryPoints,
-              termination_points: result.terminationPoints,
-              edges: result.edges
-            }
-          };
-        } finally {
-          await vectorStore.close();
-          // No cleanup method available in EmbeddingService
-        }
-      }
-    });
-
-    // Build inheritance tree tool
-    this.tools.set('build_inheritance_tree', {
-      name: 'build_inheritance_tree',
-      description: 'Build inheritance tree for a class to understand class hierarchies and relationships',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          class_name: {
-            type: 'string',
-            description: 'Name of the class to analyze'
-          },
-          include_interfaces: {
-            type: 'boolean',
-            description: 'Include interfaces in the inheritance tree',
-            default: true
-          },
-          include_abstract: {
-            type: 'boolean',
-            description: 'Include abstract classes in the inheritance tree',
-            default: true
-          }
-        },
-        required: ['class_name']
-      },
-      handler: async (args) => {
-        const config = this.configManager.getConfig();
-        const codeStorage = new CodeStorage({
-          persistToDisk: config.codeStorage.persistToDisk,
-          storagePath: config.codeStorage.storagePath,
-          maxMemorySize: config.codeStorage.maxMemorySize
-        });
-        const vectorStore = new ChromaVectorStore(
-          config.vectorStore.collectionName,
-          config.vectorStore.host,
-          config.vectorStore.port,
-          config.vectorStore.authToken
-        );
-        const embeddingService = new EmbeddingService({
-          modelName: config.embedding.modelName,
-          batchSize: config.embedding.batchSize,
-          maxSequenceLength: 512,
-          cacheSize: 10000,
-          device: 'cpu',
-          useOptimizer: true
-        });
-        const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
-        
-        await vectorStore.initialize();
-        await embeddingService.initialize();
-        
-        try {
-          const result = await analyzer.buildInheritanceTree({
-            className: args.class_name,
-            includeInterfaces: args.include_interfaces,
-            includeAbstract: args.include_abstract
-          });
-          
-          return {
-            class_name: args.class_name,
-            inheritance_tree: {
-              root_class: result.root.name,
-              tree_depth: result.depth,
-              total_classes: result.nodes.size,
-              interfaces: result.interfaces,
-              abstract_classes: result.abstractClasses,
-              concrete_classes: result.concreteClasses
-            }
-          };
-        } finally {
-          await vectorStore.close();
-          // No cleanup method available in EmbeddingService
-        }
-      }
-    });
-
-    // Analyze dependencies tool
-    this.tools.set('analyze_dependencies', {
-      name: 'analyze_dependencies',
-      description: 'Analyze dependencies between components to identify coupling and architectural issues',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          target: {
-            type: 'string',
-            description: 'Target component to analyze (class name, package, or file)'
-          },
-          dependency_types: {
-            type: 'array',
-            description: 'Types of dependencies to analyze',
-            items: {
-              type: 'string',
-              enum: ['import', 'inheritance', 'composition', 'method-call']
-            },
-            default: ['import', 'inheritance', 'method-call']
-          },
-          scope: {
-            type: 'string',
-            description: 'Scope of analysis',
-            enum: ['file', 'package', 'global'],
-            default: 'global'
-          }
-        },
-        required: ['target']
-      },
-      handler: async (args) => {
-        const config = this.configManager.getConfig();
-        const codeStorage = new CodeStorage({
-          persistToDisk: config.codeStorage.persistToDisk,
-          storagePath: config.codeStorage.storagePath,
-          maxMemorySize: config.codeStorage.maxMemorySize
-        });
-        const vectorStore = new ChromaVectorStore(
-          config.vectorStore.collectionName,
-          config.vectorStore.host,
-          config.vectorStore.port,
-          config.vectorStore.authToken
-        );
-        const embeddingService = new EmbeddingService({
-          modelName: config.embedding.modelName,
-          batchSize: config.embedding.batchSize,
-          maxSequenceLength: 512,
-          cacheSize: 10000,
-          device: 'cpu',
-          useOptimizer: true
-        });
-        const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
-        
-        await vectorStore.initialize();
-        await embeddingService.initialize();
-        
-        try {
-          const result = await analyzer.analyzeDependencies({
-            target: args.target,
-            dependencyTypes: args.dependency_types,
-            scope: args.scope
-          });
-          
-          return {
-            target: args.target,
-            dependency_analysis: {
-              total_nodes: result.metrics.totalNodes,
-              total_edges: result.metrics.totalEdges,
-              circular_dependencies: result.metrics.circularDependencies,
-              average_coupling: result.metrics.averageCoupling,
-              stability_index: result.metrics.stabilityIndex,
-              hotspots: result.hotspots.map(hotspot => ({
-                component: hotspot.nodeId,
-                issue_type: hotspot.type,
-                score: hotspot.score,
-                recommendations: hotspot.recommendations
-              }))
-            }
-          };
-        } finally {
-          await vectorStore.close();
-          // No cleanup method available in EmbeddingService
-        }
-      }
-    });
-
-    // Find implementations tool
+    // Find implementations tool - REVIVED with vector-based approach
     this.tools.set('find_implementations', {
       name: 'find_implementations',
-      description: 'Find all implementations of an interface or abstract class',
+      description: 'Find all implementations of an interface or abstract class using semantic search',
       inputSchema: {
         type: 'object',
         properties: {
@@ -763,54 +466,437 @@ export class MCPServer {
         required: ['interface_name']
       },
       handler: async (args) => {
-        const config = this.configManager.getConfig();
-        const codeStorage = new CodeStorage({
-          persistToDisk: config.codeStorage.persistToDisk,
-          storagePath: config.codeStorage.storagePath,
-          maxMemorySize: config.codeStorage.maxMemorySize
-        });
-        const vectorStore = new ChromaVectorStore(
-          config.vectorStore.collectionName,
-          config.vectorStore.host,
-          config.vectorStore.port,
-          config.vectorStore.authToken
-        );
-        const embeddingService = new EmbeddingService({
-          modelName: config.embedding.modelName,
-          batchSize: config.embedding.batchSize,
-          maxSequenceLength: 512,
-          cacheSize: 10000,
-          device: 'cpu',
-          useOptimizer: true
-        });
-        const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
+        const semanticSearch = new SemanticSearch(this.configManager.getConfig().semanticSearch);
+        await semanticSearch.initialize();
         
-        await vectorStore.initialize();
-        await embeddingService.initialize();
+        // Search for implementations using semantic similarity
+        // Look for classes that implement the interface
+        const searchQueries = [
+          `implements ${args.interface_name}`,
+          `extends ${args.interface_name}`,
+          `class.*${args.interface_name}`,
+          `${args.interface_name} implementation`
+        ];
         
-        try {
-          const implementations = await analyzer.findImplementations({
-            interfaceName: args.interface_name,
-            includeSubinterfaces: args.include_subinterfaces
+        const allResults = [];
+        const seenFiles = new Set<string>();
+        
+        for (const query of searchQueries) {
+          const results = await semanticSearch.search(query, {
+            topK: 10,
+            minSimilarity: 0.3
           });
           
-          return {
-            interface_name: args.interface_name,
-            implementations: implementations.map(impl => ({
-              implementation_name: impl.implementationName,
-              file_path: impl.filePath,
-              package: impl.package,
-              is_abstract: impl.isAbstract,
-              method_count: impl.methods.length
-            }))
-          };
-        } finally {
-          await vectorStore.close();
-          // No cleanup method available in EmbeddingService
+          // Filter and deduplicate results
+          for (const result of results.results) {
+            if (!seenFiles.has(result.filePath) &&
+                (result.content.includes('implements') ||
+                 result.content.includes('extends') ||
+                 result.type === 'class' ||
+                 result.type === 'function')) {
+              allResults.push(result);
+              seenFiles.add(result.filePath);
+            }
+          }
         }
+        
+        await semanticSearch.close();
+        
+        return {
+          interface_name: args.interface_name,
+          implementations: allResults.slice(0, 15).map(impl => ({
+            implementation_name: impl.id.split('_').pop() || 'Unknown',
+            file_path: impl.filePath,
+            package: impl.filePath.includes('src/main/java/') ?
+              impl.filePath.split('src/main/java/')[1].replace(/\//g, '.').replace('.java', '') :
+              impl.filePath,
+            is_abstract: impl.content.includes('abstract'),
+            method_count: impl.content.split('(').length - 1,
+            similarity: impl.similarity
+          }))
+        };
       }
     });
+
+    // REMOVED: Documentation generation tool - not functional, returns empty results
+    // this.tools.set('generate_documentation', {
+    //   name: 'generate_documentation',
+    //   description: 'Generate documentation for code snippets',
+    //   inputSchema: {
+    //     type: 'object',
+    //     properties: {
+    //       code_snippet: {
+    //         type: 'string',
+    //         description: 'Code to generate documentation for'
+    //       },
+    //       documentation_style: {
+    //         type: 'string',
+    //         description: 'Style of documentation',
+    //         enum: ['inline', 'separate', 'markdown'],
+    //         default: 'inline'
+    //       },
+    //       include_examples: {
+    //         type: 'boolean',
+    //         description: 'Include usage examples',
+    //         default: true
+    //       }
+    //     },
+    //     required: ['code_snippet']
+    //   },
+    //   handler: async (args) => {
+    //     const parser = new CodeParser();
+    //
+    //     // Parse the code snippet to understand its structure
+    //     const tempFile = '/tmp/temp_code_snippet.js';
+    //     const fs = require('fs');
+    //     fs.writeFileSync(tempFile, args.code_snippet);
+    //
+    //     try {
+    //       const chunks = await parser.parseFile(tempFile, args.code_snippet);
+    //
+    //       return {
+    //         code_snippet: args.code_snippet,
+    //         documentation_style: args.documentation_style,
+    //         parsed_chunks: chunks.length,
+    //         documentation: this.generateDocumentation(chunks)
+    //       };
+    //     } finally {
+    //       // Clean up temp file
+    //       if (fs.existsSync(tempFile)) {
+    //         fs.unlinkSync(tempFile);
+    //       }
+    //     }
+    //   }
+    // });
+
+    // REMOVED: Cross-reference analysis tools - they don't work with current indexing
+    // this.registerCrossReferenceTools();
   }
+
+  /**
+   * Register cross-reference analysis tools - DISABLED due to indexing issues
+  //  */
+  // private registerCrossReferenceTools(): void {
+  //   // Cross-reference tools are disabled because they rely on stale indexes
+  //   // that don't sync with the vector store. Use semantic search instead.
+  //   return;
+  //   // Trace method calls tool
+  //   this.tools.set('trace_method_calls', {
+  //     name: 'trace_method_calls',
+  //     description: 'Trace method calls across the codebase to build call graphs and identify dependencies',
+  //     inputSchema: {
+  //       type: 'object',
+  //       properties: {
+  //         method_name: {
+  //           type: 'string',
+  //           description: 'Name of the method to trace'
+  //         },
+  //         class_name: {
+  //           type: 'string',
+  //           description: 'Name of the class containing the method (optional)'
+  //         },
+  //         file_path: {
+  //           type: 'string',
+  //           description: 'Path to the file containing the method (optional)'
+  //         },
+  //         max_depth: {
+  //           type: 'number',
+  //           description: 'Maximum depth to trace (default: 10)',
+  //           minimum: 1,
+  //           maximum: 50,
+  //           default: 10
+  //         },
+  //         direction: {
+  //           type: 'string',
+  //           description: 'Direction of call tracing',
+  //           enum: ['callers', 'callees', 'both'],
+  //           default: 'both'
+  //         }
+  //       },
+  //       required: ['method_name']
+  //     },
+  //     handler: async (args) => {
+  //       const config = this.configManager.getConfig();
+  //       const codeStorage = new CodeStorage({
+  //         persistToDisk: config.codeStorage.persistToDisk,
+  //         storagePath: config.codeStorage.storagePath,
+  //         maxMemorySize: config.codeStorage.maxMemorySize
+  //       });
+  //       const vectorStore = new ChromaVectorStore(
+  //         config.vectorStore.collectionName,
+  //         config.vectorStore.host,
+  //         config.vectorStore.port,
+  //         config.vectorStore.authToken
+  //       );
+  //       const embeddingService = new EmbeddingService({
+  //         modelName: config.embedding.modelName,
+  //         batchSize: config.embedding.batchSize,
+  //         maxSequenceLength: 512,
+  //         cacheSize: 10000,
+  //         device: 'cpu',
+  //         useOptimizer: true
+  //       });
+  //       const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
+        
+  //       await vectorStore.initialize();
+  //       await embeddingService.initialize();
+        
+  //       try {
+  //         const result = await analyzer.traceMethodCalls({
+  //           methodName: args.method_name,
+  //           className: args.class_name,
+  //           filePath: args.file_path,
+  //           maxDepth: args.max_depth,
+  //           direction: args.direction
+  //         });
+          
+  //         return {
+  //           method_name: args.method_name,
+  //           call_graph: {
+  //             root: result.root,
+  //             total_methods: result.metadata.totalMethods,
+  //             max_depth: result.metadata.maxDepth,
+  //             circular_dependencies: result.metadata.circularDependencies,
+  //             entry_points: result.entryPoints,
+  //             termination_points: result.terminationPoints,
+  //             edges: result.edges
+  //           }
+  //         };
+  //       } finally {
+  //         await vectorStore.close();
+  //         // No cleanup method available in EmbeddingService
+  //       }
+  //     }
+  //   });
+
+  //   // Build inheritance tree tool
+  //   this.tools.set('build_inheritance_tree', {
+  //     name: 'build_inheritance_tree',
+  //     description: 'Build inheritance tree for a class to understand class hierarchies and relationships',
+  //     inputSchema: {
+  //       type: 'object',
+  //       properties: {
+  //         class_name: {
+  //           type: 'string',
+  //           description: 'Name of the class to analyze'
+  //         },
+  //         include_interfaces: {
+  //           type: 'boolean',
+  //           description: 'Include interfaces in the inheritance tree',
+  //           default: true
+  //         },
+  //         include_abstract: {
+  //           type: 'boolean',
+  //           description: 'Include abstract classes in the inheritance tree',
+  //           default: true
+  //         }
+  //       },
+  //       required: ['class_name']
+  //     },
+  //     handler: async (args) => {
+  //       const config = this.configManager.getConfig();
+  //       const codeStorage = new CodeStorage({
+  //         persistToDisk: config.codeStorage.persistToDisk,
+  //         storagePath: config.codeStorage.storagePath,
+  //         maxMemorySize: config.codeStorage.maxMemorySize
+  //       });
+  //       const vectorStore = new ChromaVectorStore(
+  //         config.vectorStore.collectionName,
+  //         config.vectorStore.host,
+  //         config.vectorStore.port,
+  //         config.vectorStore.authToken
+  //       );
+  //       const embeddingService = new EmbeddingService({
+  //         modelName: config.embedding.modelName,
+  //         batchSize: config.embedding.batchSize,
+  //         maxSequenceLength: 512,
+  //         cacheSize: 10000,
+  //         device: 'cpu',
+  //         useOptimizer: true
+  //       });
+  //       const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
+        
+  //       await vectorStore.initialize();
+  //       await embeddingService.initialize();
+        
+  //       try {
+  //         const result = await analyzer.buildInheritanceTree({
+  //           className: args.class_name,
+  //           includeInterfaces: args.include_interfaces,
+  //           includeAbstract: args.include_abstract
+  //         });
+          
+  //         return {
+  //           class_name: args.class_name,
+  //           inheritance_tree: {
+  //             root_class: result.root.name,
+  //             tree_depth: result.depth,
+  //             total_classes: result.nodes.size,
+  //             interfaces: result.interfaces,
+  //             abstract_classes: result.abstractClasses,
+  //             concrete_classes: result.concreteClasses
+  //           }
+  //         };
+  //       } finally {
+  //         await vectorStore.close();
+  //         // No cleanup method available in EmbeddingService
+  //       }
+  //     }
+  //   });
+
+  //   // Analyze dependencies tool
+  //   this.tools.set('analyze_dependencies', {
+  //     name: 'analyze_dependencies',
+  //     description: 'Analyze dependencies between components to identify coupling and architectural issues',
+  //     inputSchema: {
+  //       type: 'object',
+  //       properties: {
+  //         target: {
+  //           type: 'string',
+  //           description: 'Target component to analyze (class name, package, or file)'
+  //         },
+  //         dependency_types: {
+  //           type: 'array',
+  //           description: 'Types of dependencies to analyze',
+  //           items: {
+  //             type: 'string',
+  //             enum: ['import', 'inheritance', 'composition', 'method-call']
+  //           },
+  //           default: ['import', 'inheritance', 'method-call']
+  //         },
+  //         scope: {
+  //           type: 'string',
+  //           description: 'Scope of analysis',
+  //           enum: ['file', 'package', 'global'],
+  //           default: 'global'
+  //         }
+  //       },
+  //       required: ['target']
+  //     },
+  //     handler: async (args) => {
+  //       const config = this.configManager.getConfig();
+  //       const codeStorage = new CodeStorage({
+  //         persistToDisk: config.codeStorage.persistToDisk,
+  //         storagePath: config.codeStorage.storagePath,
+  //         maxMemorySize: config.codeStorage.maxMemorySize
+  //       });
+  //       const vectorStore = new ChromaVectorStore(
+  //         config.vectorStore.collectionName,
+  //         config.vectorStore.host,
+  //         config.vectorStore.port,
+  //         config.vectorStore.authToken
+  //       );
+  //       const embeddingService = new EmbeddingService({
+  //         modelName: config.embedding.modelName,
+  //         batchSize: config.embedding.batchSize,
+  //         maxSequenceLength: 512,
+  //         cacheSize: 10000,
+  //         device: 'cpu',
+  //         useOptimizer: true
+  //       });
+  //       const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
+        
+  //       await vectorStore.initialize();
+  //       await embeddingService.initialize();
+        
+  //       try {
+  //         const result = await analyzer.analyzeDependencies({
+  //           target: args.target,
+  //           dependencyTypes: args.dependency_types,
+  //           scope: args.scope
+  //         });
+          
+  //         return {
+  //           target: args.target,
+  //           dependency_analysis: {
+  //             total_nodes: result.metrics.totalNodes,
+  //             total_edges: result.metrics.totalEdges,
+  //             circular_dependencies: result.metrics.circularDependencies,
+  //             average_coupling: result.metrics.averageCoupling,
+  //             stability_index: result.metrics.stabilityIndex,
+  //             hotspots: result.hotspots.map(hotspot => ({
+  //               component: hotspot.nodeId,
+  //               issue_type: hotspot.type,
+  //               score: hotspot.score,
+  //               recommendations: hotspot.recommendations
+  //             }))
+  //           }
+  //         };
+  //       } finally {
+  //         await vectorStore.close();
+  //         // No cleanup method available in EmbeddingService
+  //       }
+  //     }
+  //   });
+
+  //   // Find implementations tool
+  //   this.tools.set('find_implementations', {
+  //     name: 'find_implementations',
+  //     description: 'Find all implementations of an interface or abstract class',
+  //     inputSchema: {
+  //       type: 'object',
+  //       properties: {
+  //         interface_name: {
+  //           type: 'string',
+  //           description: 'Name of the interface to find implementations for'
+  //         },
+  //         include_subinterfaces: {
+  //           type: 'boolean',
+  //           description: 'Include implementations of sub-interfaces',
+  //           default: false
+  //         }
+  //       },
+  //       required: ['interface_name']
+  //     },
+  //     handler: async (args) => {
+  //       const config = this.configManager.getConfig();
+  //       const codeStorage = new CodeStorage({
+  //         persistToDisk: config.codeStorage.persistToDisk,
+  //         storagePath: config.codeStorage.storagePath,
+  //         maxMemorySize: config.codeStorage.maxMemorySize
+  //       });
+  //       const vectorStore = new ChromaVectorStore(
+  //         config.vectorStore.collectionName,
+  //         config.vectorStore.host,
+  //         config.vectorStore.port,
+  //         config.vectorStore.authToken
+  //       );
+  //       const embeddingService = new EmbeddingService({
+  //         modelName: config.embedding.modelName,
+  //         batchSize: config.embedding.batchSize,
+  //         maxSequenceLength: 512,
+  //         cacheSize: 10000,
+  //         device: 'cpu',
+  //         useOptimizer: true
+  //       });
+  //       const analyzer = new CrossReferenceAnalyzerImpl(codeStorage, vectorStore, embeddingService);
+        
+  //       await vectorStore.initialize();
+  //       await embeddingService.initialize();
+        
+  //       try {
+  //         const implementations = await analyzer.findImplementations({
+  //           interfaceName: args.interface_name,
+  //           includeSubinterfaces: args.include_subinterfaces
+  //         });
+          
+  //         return {
+  //           interface_name: args.interface_name,
+  //           implementations: implementations.map(impl => ({
+  //             implementation_name: impl.implementationName,
+  //             file_path: impl.filePath,
+  //             package: impl.package,
+  //             is_abstract: impl.isAbstract,
+  //             method_count: impl.methods.length
+  //           }))
+  //         };
+  //       } finally {
+  //         await vectorStore.close();
+  //         // No cleanup method available in EmbeddingService
+  //       }
+  //     }
+  //   });
+  // }
 
   /**
    * Analyze code complexity
@@ -855,33 +941,33 @@ export class MCPServer {
   }
 
   /**
-   * Generate documentation
+   * Generate documentation - REMOVED: Not used anymore
    */
-  private generateDocumentation(chunks: any[]): any {
-    return chunks.map(chunk => ({
-      name: chunk.name,
-      type: chunk.type,
-      documentation: `Generated documentation for ${chunk.type} ${chunk.name}`,
-      parameters: chunk.signature ? this.extractParameters(chunk.signature) : [],
-      return_type: chunk.signature ? this.extractReturnType(chunk.signature) : 'unknown'
-    }));
-  }
+  // private generateDocumentation(chunks: any[]): any {
+  //   return chunks.map(chunk => ({
+  //     name: chunk.name,
+  //     type: chunk.type,
+  //     documentation: `Generated documentation for ${chunk.type} ${chunk.name}`,
+  //     parameters: chunk.signature ? this.extractParameters(chunk.signature) : [],
+  //     return_type: chunk.signature ? this.extractReturnType(chunk.signature) : 'unknown'
+  //   }));
+  // }
 
   /**
-   * Extract parameters from signature
+   * Extract parameters from signature - REMOVED: Not used anymore
    */
-  private extractParameters(signature: string): string[] {
-    const match = signature.match(/\((.*?)\)/);
-    return match ? match[1].split(',').map(p => p.trim()).filter(p => p) : [];
-  }
+  // private extractParameters(signature: string): string[] {
+  //   const match = signature.match(/\((.*?)\)/);
+  //   return match ? match[1].split(',').map(p => p.trim()).filter(p => p) : [];
+  // }
 
   /**
-   * Extract return type from signature
+   * Extract return type from signature - REMOVED: Not used anymore
    */
-  private extractReturnType(signature: string): string {
-    const match = signature.match(/:\s*([^\{]+)/);
-    return match ? match[1].trim() : 'unknown';
-  }
+  // private extractReturnType(signature: string): string {
+  //   const match = signature.match(/:\s*([^\{]+)/);
+  //   return match ? match[1].trim() : 'unknown';
+  // }
 }
 
 export class MCPServerManager {

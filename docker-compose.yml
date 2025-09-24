@@ -18,6 +18,21 @@ services:
       - chroma-network
     restart: unless-stopped
 
+  chroma-admin:
+    image: fengzhichao/chromadb-admin:latest
+    container_name: chroma-admin
+    ports:
+      - "3001:3001"
+    environment:
+      - CHROMA_API_URL=http://host.docker.internal:8000
+    depends_on:
+      - chromadb
+    networks:
+      - chroma-network
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   chroma_data:
     driver: local

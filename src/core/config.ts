@@ -170,7 +170,7 @@ const DEFAULT_CONFIG: ContextEngineConfig = {
     enableContentFiltering: true
   },
   codeStorage: {
-    persistToDisk: true,
+    persistToDisk: false,
     storagePath: './.code-storage',
     maxMemorySize: 50 * 1024 * 1024 // 50MB
   }

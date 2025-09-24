@@ -13,8 +13,6 @@ import { SearchResult } from '../core/types.js';
 import { VersionManager } from '../mcp/version.js';
 import { MemoryManager } from '../mcp/memory-manager.js';
 import { MemoryConfigManager } from '../mcp/memory-config.js';
-import { CrossReferenceAnalyzerImpl } from '../analysis/cross-reference-analyzer.js';
-import { CodeStorage } from '../storage/code-storage.js';
 
 const program = new Command();
 const logger = getGlobalLogger();
@@ -116,18 +114,18 @@ export class CLIInterface {
         }
       });
 
-    // Index X-Refs command - build cross-reference indexes
-    program
-      .command('index-xrefs')
-      .description('Build cross-reference indexes for analysis tools')
-      .action(async () => {
-        try {
-          await this.indexXrefsCommand();
-        } catch (error) {
-          console.error('Cross-reference indexing failed:', error);
-          process.exit(1);
-        }
-      });
+    // Index X-Refs command - DISABLED (cross-reference tools removed)
+    // program
+    //   .command('index-xrefs')
+    //   .description('Build cross-reference indexes for analysis tools')
+    //   .action(async () => {
+    //     try {
+    //       await this.indexXrefsCommand();
+    //     } catch (error) {
+    //       console.error('Cross-reference indexing failed:', error);
+    //       process.exit(1);
+    //     }
+    //   });
 
     // Config command - manage configuration
     program
@@ -173,9 +171,24 @@ export class CLIInterface {
           console.error('Clear command failed:', error);
           process.exit(1);
         }
-      });
-
-    // Debug command - debugging utilities
+        });
+ 
+     // Indexing status command - check indexing completeness
+     program
+       .command('index-status')
+       .description('Check indexing status and completeness by directory')
+       .option('-d, --directory <path>', 'Check specific directory')
+       .option('--format <format>', 'Output format (json, table)', 'table')
+       .action(async (options: any) => {
+         try {
+           await this.indexStatusCommand(options);
+         } catch (error) {
+           console.error('Index status command failed:', error);
+           process.exit(1);
+         }
+       });
+ 
+     // Debug command - debugging utilities
     program
       .command('debug')
       .description('Debugging utilities')
@@ -454,39 +467,39 @@ export class CLIInterface {
   }
 
   /**
-   * Index cross-references command implementation
+   * Index cross-references command implementation - DISABLED
    */
-  private async indexXrefsCommand(): Promise<void> {
-    console.log('Building cross-reference indexes...');
+  // private async indexXrefsCommand(): Promise<void> {
+  //   console.log('Building cross-reference indexes...');
 
-    const config = this.configManager.getConfig();
-    const vectorStore = new ChromaVectorStore(
-      config.vectorStore.collectionName,
-      config.vectorStore.host || 'localhost',
-      config.vectorStore.port || 8000,
-      config.vectorStore.authToken || 'test-token'
-    );
-    await vectorStore.initialize();
+  //   const config = this.configManager.getConfig();
+  //   const vectorStore = new ChromaVectorStore(
+  //     config.vectorStore.collectionName,
+  //     config.vectorStore.host || 'localhost',
+  //     config.vectorStore.port || 8000,
+  //     config.vectorStore.authToken || 'test-token'
+  //   );
+  //   await vectorStore.initialize();
 
-    const embeddingService = new EmbeddingService();
-    await embeddingService.initialize();
+  //   const embeddingService = new EmbeddingService();
+  //   await embeddingService.initialize();
 
-    const codeStorage = new CodeStorage({ persistToDisk: true });
+  //   const codeStorage = new CodeStorage({ persistToDisk: true });
 
-    const xrefAnalyzer = new CrossReferenceAnalyzerImpl(
-      codeStorage,
-      vectorStore,
-      embeddingService
-    );
+  //   const xrefAnalyzer = new CrossReferenceAnalyzerImpl(
+  //     codeStorage,
+  //     vectorStore,
+  //     embeddingService
+  //   );
 
-    // This is a private method, so we need to cast to any to call it.
-    // In a real application, we might expose a public method for this.
-    await (xrefAnalyzer as any).buildIndexes();
+  //   // This is a private method, so we need to cast to any to call it.
+  //   // In a real application, we might expose a public method for this.
+  //   await (xrefAnalyzer as any).buildIndexes();
 
-    console.log('Cross-reference indexes built successfully');
+  //   console.log('Cross-reference indexes built successfully');
 
-    await vectorStore.close();
-  }
+  //   await vectorStore.close();
+  // }
 
   /**
    * Get all files in a directory
@@ -649,6 +662,87 @@ export class CLIInterface {
       await vectorStore.close();
     } catch (error) {
       console.error('Failed to get statistics:', error);
+    }
+  }
+
+  /**
+   * Index status command implementation
+   */
+  private async indexStatusCommand(options: any): Promise<void> {
+    console.log('Indexing Status Report:');
+    console.log('======================');
+    
+    try {
+      const config = this.configManager.getConfig();
+      const vectorStore = new ChromaVectorStore(
+        config.vectorStore.collectionName,
+        config.vectorStore.host || 'localhost',
+        config.vectorStore.port || 8000,
+        config.vectorStore.authToken || 'test-token'
+      );
+      
+      await vectorStore.initialize();
+      
+      if (options.directory) {
+        // Check specific directory
+        const stats = await vectorStore.getDirectoryStats(options.directory);
+        const lastIndexedDate = stats.lastIndexed ? new Date(stats.lastIndexed).toLocaleString() : 'Never';
+        
+        if (options.format === 'json') {
+          console.log(JSON.stringify({
+            directory: options.directory,
+            vectorCount: stats.count,
+            lastIndexed: lastIndexedDate
+          }, null, 2));
+        } else {
+          console.log(`Directory: ${options.directory}`);
+          console.log(`Vector Count: ${stats.count}`);
+          console.log(`Last Indexed: ${lastIndexedDate}`);
+        }
+      } else {
+        // Check all directories
+        const directories = await vectorStore.getAllDirectories();
+        
+        if (directories.length === 0) {
+          console.log('No indexed directories found.');
+          return;
+        }
+        
+        if (options.format === 'json') {
+          const allStats = [];
+          for (const directory of directories) {
+            const stats = await vectorStore.getDirectoryStats(directory);
+            allStats.push({
+              directory,
+              vectorCount: stats.count,
+              lastIndexed: stats.lastIndexed ? new Date(stats.lastIndexed).toLocaleString() : 'Never'
+            });
+          }
+          console.log(JSON.stringify({ directories: allStats }, null, 2));
+        } else {
+          console.log(`Found ${directories.length} indexed directories:\n`);
+          
+          // Table header
+          console.log('Directory'.padEnd(60) + 'Vectors'.padEnd(10) + 'Last Indexed');
+          console.log('-'.repeat(90));
+          
+          for (const directory of directories) {
+            const stats = await vectorStore.getDirectoryStats(directory);
+            const lastIndexedDate = stats.lastIndexed ? new Date(stats.lastIndexed).toLocaleString() : 'Never';
+            const displayDir = directory.length > 57 ? '...' + directory.slice(-54) : directory;
+            
+            console.log(
+              displayDir.padEnd(60) +
+              stats.count.toString().padEnd(10) +
+              lastIndexedDate
+            );
+          }
+        }
+      }
+      
+      await vectorStore.close();
+    } catch (error) {
+      console.error('Failed to get index status:', error);
     }
   }
 

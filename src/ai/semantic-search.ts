@@ -1,7 +1,6 @@
 import { CodeParser } from '../analysis/code-parser';
 import { EmbeddingService } from './embedding-service';
 import { ChromaVectorStore } from './chroma-vector-store';
-import { CodeStorage } from '../storage/code-storage';
 import {
   CodeVector,
   SearchOptions,
@@ -14,11 +13,10 @@ export class SemanticSearch {
   private parser: CodeParser;
   private embeddingService: EmbeddingService;
   private vectorStore: ChromaVectorStore;
-  private codeStorage: CodeStorage;
   private config: SemanticSearchConfig;
   private isInitialized: boolean = false;
 
-  constructor(config: SemanticSearchConfig = {}, codeStorageConfig?: import('../core/config.js').CodeStorageConfig) {
+  constructor(config: SemanticSearchConfig = {}) {
     this.config = {
       embeddingModel: 'Xenova/all-MiniLM-L6-v2',
       vectorStore: 'chroma',
@@ -31,11 +29,6 @@ export class SemanticSearch {
 
     this.parser = new CodeParser();
     this.embeddingService = new EmbeddingService();
-    this.codeStorage = new CodeStorage(codeStorageConfig || {
-      persistToDisk: true,
-      storagePath: './.code-storage',
-      maxMemorySize: 50 * 1024 * 1024
-    });
     
     // Initialize ChromaDB vector store with proper connection parameters
     this.vectorStore = new ChromaVectorStore(
@@ -85,36 +78,6 @@ export class SemanticSearch {
       // Generate embeddings for chunks
       const embeddings = await this.embeddingService.generateBatchEmbeddings({ chunks });
       console.log(`Generated ${embeddings.length} embeddings`);
-
-      // Store chunks in code storage for cross-reference analysis
-      const codeChunks = chunks.map(chunk => ({
-        id: `${filePath}_${chunk.type}_${chunk.startLine}_${chunk.startColumn}_${Date.now()}`,
-        type: chunk.type,
-        name: chunk.name,
-        content: chunk.content,
-        filePath: chunk.filePath,
-        language: chunk.language,
-        startLine: chunk.startLine,
-        endLine: chunk.endLine,
-        startColumn: chunk.startColumn,
-        endColumn: chunk.endColumn,
-        signature: chunk.signature,
-        documentation: chunk.documentation,
-        dependencies: chunk.dependencies || [],
-        metadata: chunk.metadata,
-        timestamp: chunk.timestamp
-      }));
-
-      try {
-        await this.codeStorage.storeChunks(codeChunks);
-        console.log(`Stored ${codeChunks.length} chunks in code storage for ${filePath}`);
-        
-        // Verify storage worked
-        const storedChunks = await this.codeStorage.searchChunks({ filePath });
-        console.log(`Verified: ${storedChunks.length} chunks found in code storage for ${filePath}`);
-      } catch (storageError) {
-        console.error(`Failed to store chunks in code storage:`, storageError);
-      }
 
       // Create code vectors with unique IDs
       const codeVectors: CodeVector[] = chunks.map((chunk, index) => ({
@@ -226,8 +189,7 @@ export class SemanticSearch {
           break;
         case 'delete':
           await this.vectorStore.deleteVectors(event.filePath);
-          await this.codeStorage.removeChunksByFile(event.filePath);
-          console.log(`Removed vectors and chunks for deleted file: ${event.filePath}`);
+          console.log(`Removed vectors for deleted file: ${event.filePath}`);
           break;
       }
     } catch (error) {
