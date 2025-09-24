@@ -137,10 +137,6 @@ MCP client configuration for MCP Local Context Engine:
         "code_search",
         "context_analysis",
         "find_related_code",
-        "generate_documentation",
-        "trace_method_calls",
-        "build_inheritance_tree",
-        "analyze_dependencies",
         "find_implementations"
       ]
     }
@@ -220,7 +216,7 @@ For detailed configuration management, see the `config` command in the CLI Comma
 
 | Command      | Description                                      | Arguments                          | Key Options                                                                 | Usage Example                                                                 |
 |--------------|--------------------------------------------------|------------------------------------|-----------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| **`search`** | Semantic code search with AI-powered similarity matching | `<query>`: Search query string    | `-l, --language <lang>`: Filter by language<br>`-t, --type <type>`: Filter by code type<br>`-f, --file <path>`: Filter by file path<br>`-k, --top-k <n>`: Results count (default: 5)<br>`-s, --min-similarity <score>`: Min similarity (default: 0.2)<br>`--format <format>`: Output format (json, table, plain) | `node dist/src/cli/cli-main.js search "authentication flow" --language java --top-k 10` |
+| **`search`** | Semantic code search with AI-powered similarity matching | `<query>`: Search query string    | `-l, --language <lang>`: Filter by language<br>`-t, --type <type>`: Filter by code type<br>`-f, --file <path>`: Filter by file path<br>`-k, --top-k <n>`: Results count (default: 5)<br>`-s, --min-similarity <score>`: Min similarity (default: 0.2)<br>`--format <format>`: Output format (json, table, plain)<br>`--use-llm-judgment`: Enable DSPy-style LLM filtering for disambiguation<br>`--llm-provider <provider>`: LLM provider (openai, anthropic, custom)<br>`--llm-model <model>`: Specific LLM model to use | `node dist/src/cli/cli-main.js search "authentication flow" --language java --top-k 10 --use-llm-judgment --llm-provider custom --llm-model gpt-3.5-turbo` |
 | **`analyze`** | Analyze code structure, dependencies, and complexity | `[file-path]`: Specific file to analyze | `-d, --depth <number>`: Analysis depth (default: 1)<br>`--format <format>`: Output format (json, tree, plain) | `node dist/src/cli/cli-main.js analyze src/memory-manager.ts --format json`      |
 | **`index`**  | Index files or directories for semantic search   | `[path]`: File/directory to index (default: current directory) | `-r, --recursive`: Index recursively<br>`-f, --force`: Force re-indexing   | `node dist/src/cli/cli-main.js index src --recursive`                            |
 | **`index-xrefs`** | Build cross-reference indexes for advanced analysis | *None*                            | *No additional options*                                                    | `node dist/src/cli/cli-main.js index-xrefs`                                      |
@@ -253,6 +249,13 @@ node dist/src/cli/cli-main.js search "user authentication" \
   --type function \
   --top-k 10 \
   --min-similarity 0.5
+
+# DSPy-style enhanced search with LLM judgment for disambiguation
+node dist/src/cli/cli-main.js search "example search" \
+  --language java \
+  --use-llm-judgment \
+  --llm-provider custom \
+  --llm-model gpt-3.5-turbo
 
 # Index codebase recursively
 node dist/src/cli/cli-main.js index /path/to/code --recursive

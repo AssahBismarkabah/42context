@@ -4,12 +4,17 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { getGlobalLogger } from '../core/logger.js';
 import { SemanticSearch } from '../ai/semantic-search.js';
+import { EnhancedSemanticSearch, createLLMProvider } from '../ai/llm-provider.js';
 import { ConfigManager } from '../core/config.js';
 import { CodeParser } from '../analysis/code-parser.js';
 import { readFileSync } from 'fs';
 import { z } from 'zod';
 import { VersionManager } from './version.js';
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
+import { config } from 'dotenv';
+
+// Load environment variables from .env file
+config();
 
 
 export interface MCPServerConfig {
@@ -295,10 +300,10 @@ export class MCPServer {
    * Register MCP tools
    */
   private registerTools(): void {
-    // Code search tool
+    // Code search tool with optional LLM judgment enhancement
     this.tools.set('code_search', {
       name: 'code_search',
-      description: 'Search for semantically similar code patterns in the codebase',
+      description: 'Search for semantically similar code patterns in the codebase with optional LLM judgment for better relevance',
       inputSchema: {
         type: 'object',
         properties: {
@@ -322,6 +327,20 @@ export class MCPServer {
             description: 'Minimum similarity score (default: 0.2)',
             minimum: 0.0,
             maximum: 1.0
+          },
+          use_llm_judgment: {
+            type: 'boolean',
+            description: 'Use LLM judgment to improve result relevance (requires LLM provider configuration)',
+            default: false
+          },
+          llm_provider: {
+            type: 'string',
+            description: 'LLM provider to use for judgment (openai, openrouter, custom)',
+            enum: ['openai', 'openrouter', 'custom']
+          },
+          llm_model: {
+            type: 'string',
+            description: 'Specific model to use (e.g., gpt-3.5-turbo, gpt-4)'
           }
         },
         required: ['query']
@@ -330,14 +349,72 @@ export class MCPServer {
         const semanticSearch = new SemanticSearch(this.configManager.getConfig().semanticSearch);
         await semanticSearch.initialize();
         
-        const results = await semanticSearch.search(args.query, {
-          topK: args.top_k || 5,
-          language: args.language,
-          minSimilarity: args.similarity_threshold || 0.2
-        });
-        
-        await semanticSearch.close();
-        return results;
+        // Check if LLM judgment is requested and configured
+        if (args.use_llm_judgment) {
+          try {
+            // Get LLM configuration from environment or arguments
+            const llmConfig: any = {
+              provider: args.llm_provider || 'openai',
+              apiKey: process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '',
+              model: args.llm_model || 'gpt-3.5-turbo'
+            };
+            
+            // Only add baseURL if it's defined
+            const baseURL = process.env.LLM_BASE_URL;
+            if (baseURL) {
+              llmConfig.baseURL = baseURL;
+            }
+            
+            if (!llmConfig.apiKey) {
+              throw new Error('LLM API key not found. Please set LLM_API_KEY or OPENAI_API_KEY environment variable.');
+            }
+            
+            // Create LLM provider
+            const llmProvider = createLLMProvider(llmConfig);
+            
+            // Create enhanced semantic search with LLM judgment
+            const enhancedSearch = new EnhancedSemanticSearch(semanticSearch, llmProvider);
+            
+            // Perform enhanced search with LLM judgment
+            const results = await enhancedSearch.searchWithJudgment(args.query, {
+              topK: args.top_k || 5,
+              language: args.language,
+              minSimilarity: args.similarity_threshold || 0.2,
+              useLLMJudgment: true
+            });
+            
+            await semanticSearch.close();
+            return results;
+            
+          } catch (llmError) {
+            // Fallback to regular search if LLM fails
+            const logger = getGlobalLogger();
+            logger.warn('LLM judgment failed, falling back to regular search:', llmError);
+            
+            const results = await semanticSearch.search(args.query, {
+              topK: args.top_k || 5,
+              language: args.language,
+              minSimilarity: args.similarity_threshold || 0.2
+            });
+            
+            await semanticSearch.close();
+            return {
+              ...results,
+              warning: 'LLM judgment failed, showing regular vector search results',
+              llm_error: llmError instanceof Error ? llmError.message : String(llmError)
+            };
+          }
+        } else {
+          // Regular semantic search without LLM judgment
+          const results = await semanticSearch.search(args.query, {
+            topK: args.top_k || 5,
+            language: args.language,
+            minSimilarity: args.similarity_threshold || 0.2
+          });
+          
+          await semanticSearch.close();
+          return results;
+        }
       }
     });
 

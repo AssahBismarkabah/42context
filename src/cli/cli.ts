@@ -12,6 +12,10 @@ import { CodeParser } from '../analysis/code-parser.js';
 import { SearchResult } from '../core/types.js';
 import { VersionManager } from '../mcp/version.js';
 import { MemoryManager } from '../mcp/memory-manager.js';
+import { config } from 'dotenv';
+
+// Load environment variables from .env file
+config();
 import { MemoryConfigManager } from '../mcp/memory-config.js';
 
 const program = new Command();
@@ -72,6 +76,9 @@ export class CLIInterface {
       .option('-f, --file <path>', 'Filter by file path')
       .option('-k, --top-k <number>', 'Number of results to return', '5')
       .option('-s, --min-similarity <score>', 'Minimum similarity score', '0.2')
+      .option('--use-llm-judgment', 'Use LLM judgment to improve result relevance')
+      .option('--llm-provider <provider>', 'LLM provider to use for judgment (openai, openrouter, custom)')
+      .option('--llm-model <model>', 'Specific model to use (e.g., gpt-3.5-turbo, gpt-4, kimi-k2-instruct)')
       .option('--format <format>', 'Output format (json, table, plain)', 'table')
       .action(async (query: string, options: any) => {
         try {
@@ -256,17 +263,76 @@ export class CLIInterface {
     const semanticSearch = new SemanticSearch(config.semanticSearch);
     await semanticSearch.initialize();
 
-    const searchOptions = {
-      topK: parseInt(options.topK),
-      language: options.language,
-      chunkType: options.type,
-      filePath: options.file,
-      minSimilarity: parseFloat(options.minSimilarity)
-    };
+    // Check if LLM judgment is requested
+    if (options.useLlmJudgment) {
+      console.log('Using LLM judgment for enhanced relevance...');
+      
+      try {
+        // Get LLM configuration from environment or options
+        const llmConfig: any = {
+          provider: options.llmProvider || process.env.LLM_PROVIDER || 'custom',
+          apiKey: process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '',
+          model: options.llmModel || process.env.LLM_MODEL || 'kimi-k2-instruct'
+        };
+        
+        // Only add baseURL if it's defined
+        const baseURL = process.env.LLM_BASE_URL;
+        if (baseURL) {
+          llmConfig.baseURL = baseURL;
+        }
+        
+        if (!llmConfig.apiKey) {
+          throw new Error('LLM API key not found. Please set LLM_API_KEY or OPENAI_API_KEY environment variable.');
+        }
+        
+        // Import LLM provider creation function
+        const { createLLMProvider, EnhancedSemanticSearch } = await import('../ai/llm-provider.js');
+        
+        // Create LLM provider
+        const llmProvider = createLLMProvider(llmConfig);
+        
+        // Create enhanced semantic search with LLM judgment
+        const enhancedSearch = new EnhancedSemanticSearch(semanticSearch, llmProvider);
+        
+        // Perform enhanced search with LLM judgment
+        const results = await enhancedSearch.searchWithJudgment(query, {
+          topK: parseInt(options.topK) || 5,
+          language: options.language,
+          minSimilarity: parseFloat(options.minSimilarity) || 0.2,
+          useLLMJudgment: true
+        });
+        
+        console.log('LLM judgment completed successfully');
+        this.displaySearchResults(results, options.format);
+        
+      } catch (llmError) {
+        console.warn('LLM judgment failed, falling back to regular search:', llmError);
+        
+        // Fallback to regular search
+        const searchOptions = {
+          topK: parseInt(options.topK) || 5,
+          language: options.language,
+          chunkType: options.type,
+          filePath: options.file,
+          minSimilarity: parseFloat(options.minSimilarity) || 0.2
+        };
 
-    const results = await semanticSearch.search(query, searchOptions);
-    
-    this.displaySearchResults(results, options.format);
+        const results = await semanticSearch.search(query, searchOptions);
+        this.displaySearchResults(results, options.format);
+      }
+    } else {
+      // Regular semantic search without LLM judgment
+      const searchOptions = {
+        topK: parseInt(options.topK) || 5,
+        language: options.language,
+        chunkType: options.type,
+        filePath: options.file,
+        minSimilarity: parseFloat(options.minSimilarity) || 0.2
+      };
+
+      const results = await semanticSearch.search(query, searchOptions);
+      this.displaySearchResults(results, options.format);
+    }
     
     await semanticSearch.close();
   }
