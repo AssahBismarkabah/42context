@@ -2,6 +2,9 @@
 
 
 <div>
+  <a href="https://www.npmjs.com/package/@aaswe/42context-engine">
+    <img src="https://img.shields.io/npm/v/@aaswe/42context-engine.svg" alt="npm version">
+  </a>
   <a href="https://github.com/AssahBismarkabah/42context">
     <img src="https://img.shields.io/badge/GitHub-Repository-blue?logo=github" alt="GitHub Repository">
   </a>
@@ -21,6 +24,8 @@
     <img src="https://img.shields.io/badge/License-Apache%202.0-blue" alt="License">
   </a>
 </div>
+
+**All published versions:** https://www.npmjs.com/package/@aaswe/42context-engine?activeTab=versions
 
 42Context Local Context Engine is a comprehensive code search and analysis tool that leverages MCP for intelligent code understanding. 
 it provides advanced AI-powered code search capabilities across codebase.
