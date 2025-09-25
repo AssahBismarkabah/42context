@@ -37,10 +37,10 @@ Key features include natural language queries with vector similarity matching, r
 
 <div align="center">
   <video width="800" controls>
-    <source src="docs/42context-demo.mp4" type="video/mp4">
+    <source src="https://media.githubusercontent.com/media/AssahBismarkabah/42context/main/docs/42context-demo.mp4" type="video/mp4">
     Your browser does not support the video tag.
   </video>
-  <p><em>42Context Engine Demo -  Code Search and Analysis</em></p>
+  <p><em>42Context Engine Demo - Code Search and Analysis</em></p>
 </div>
 
 
