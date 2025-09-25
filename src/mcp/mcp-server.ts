@@ -354,9 +354,9 @@ export class MCPServer {
           try {
             // Get LLM configuration from environment or arguments
             const llmConfig: any = {
-              provider: args.llm_provider || 'openai',
+              provider: args.llm_provider || process.env.LLM_PROVIDER || 'openai',
               apiKey: process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '',
-              model: args.llm_model || 'gpt-3.5-turbo'
+              model: args.llm_model || process.env.LLM_MODEL || 'gpt-3.5-turbo'
             };
             
             // Only add baseURL if it's defined

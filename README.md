@@ -92,13 +92,13 @@ The engine features an advanced memory management system designed to handle larg
 
 ```bash
 # Basic usage with GC enabled (required)
-node --expose-gc dist/src/cli/cli-main.js index /path/to/codebase --recursive
+node --expose-gc $(which 42context) index /path/to/codebase --recursive
 
 # With memory profile selection
-MEMORY_PROFILE=conservative node --expose-gc dist/src/cli/cli-main.js index /path/to/codebase
+MEMORY_PROFILE=conservative node --expose-gc $(which 42context) index /path/to/codebase
 
 # Monitor memory usage
-MEMORY_PROFILE=conservative node --expose-gc dist/src/cli/cli-main.js stats
+MEMORY_PROFILE=conservative node --expose-gc $(which 42context) stats
 ```
 
 #### Performance Results
@@ -112,6 +112,20 @@ For detailed memory management documentation, see [docs/memory-management.md](do
 
 The MCP Local Context Engine includes a full-featured MCP (Model Context Protocol) server that exposes semantic search and code analysis capabilities to MCP-compatible clients, such as Kilo Code, Claude Desktop, and VS Code extensions.
 
+### Quick Start - Start Server First
+
+**Before configuring MCP clients, you must start the 42Context server:**
+
+```bash
+# Start the MCP server (required first step)
+42context server --transport stdio
+
+# The server will run and wait for MCP client connections
+# Keep this terminal running - do not close it
+```
+
+**Then configure your MCP client** (Claude Desktop, VS Code, etc.) with the configuration below.
+
 ### Configuration Example
 
 MCP client configuration for MCP Local Context Engine:
@@ -120,16 +134,18 @@ MCP client configuration for MCP Local Context Engine:
 {
   "mcpServers": {
     "42context": {
-      "command": "node",
+      "command": "42context",
       "args": [
-        "--expose-gc",
-        "/path/to/dist/src/cli/cli-main.js",
         "server",
         "--transport",
         "stdio"
       ],
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "LLM_API_KEY": "YOUR_LLM_API_KEY",
+        "LLM_BASE_URL": "YOUR_LLM_BASE_URL",
+        "LLM_PROVIDER": "YOUR_LLM_PROVIDER",
+        "LLM_MODEL": "YOUR_LLM_MODEL"
       },
       "disabled": false,
       "autoApprove": [],
@@ -145,11 +161,21 @@ MCP client configuration for MCP Local Context Engine:
 ```
 
 **Configuration Notes:**
-- Replace `/path/to/dist/src/cli-main.js` with the actual path to your installation.
-- The `--expose-gc` flag is required for optimal memory management.
-- The `alwaysAllow` array includes all 8 available MCP tools for seamless operation.
-- The `stdio` transport is recommended for local client integration.
-- Environment variables can be added to the `env` object as needed.
+- **Start the server first**: Run `42context server --transport stdio` before configuring clients
+- **LLM Configuration**: Add `LLM_API_KEY` and optional `LLM_BASE_URL` to enable DSPy-style LLM judgment
+- The `42context` command should be available in your PATH after global installation
+- The `alwaysAllow` array includes all 4 working MCP tools for seamless operation
+- The `stdio` transport is recommended for local client integration
+- Environment variables can be added to the `env` object as needed
+- For development installations, use the full path to `dist/src/cli/cli-main.js`
+
+### Setup Workflow
+
+1. **Install 42Context**: `npm install -g @aaswe/42context-engine`
+2. **Start components**: `42context start-components --detached`
+3. **Start MCP server**: `42context server --transport stdio`
+4. **Configure MCP client**: Add the JSON configuration to your client
+5. **Test connection**: Your MCP client should now have access to 42Context tools
 
 For detailed MCP configuration and troubleshooting, see [MCP_SERVER_GUIDE.md](MCP_SERVER_GUIDE.md).
 
@@ -160,7 +186,20 @@ For detailed MCP configuration and troubleshooting, see [MCP_SERVER_GUIDE.md](MC
 - Docker and Docker Compose.
 - Git.
 
-### Installation
+### Quick Installation (NPM)
+
+```bash
+# Install globally from NPM
+npm install -g @aaswe/42context-engine
+
+# Start components (ChromaDB + Admin interface)
+42context start-components --detached
+
+# Ready to use!
+42context search "authentication flow" --use-llm-judgment
+```
+
+### Development Installation
 
 ```bash
 # Clone repository
@@ -192,7 +231,7 @@ The engine provides a comprehensive three-tier configuration system with automat
 
 ```bash
 # Use custom configuration file
-node dist/src/cli/cli-main.js --config my-config.json search "authentication"
+42context --config my-config.json search "authentication"
 ```
 
 **2. Environment Variables**
@@ -205,7 +244,7 @@ export DEV_CONTEXT_EMBEDDING_BATCH_SIZE=128
 export DEV_CONTEXT_VECTOR_STORE_HOST=chromadb.example.com
 
 # Run with environment variables
-node dist/src/cli/cli-main.js search "authentication"
+42context search "authentication"
 ```
 
 For detailed configuration management, see the `config` command in the CLI Commands Reference.
@@ -216,58 +255,62 @@ For detailed configuration management, see the `config` command in the CLI Comma
 
 | Command      | Description                                      | Arguments                          | Key Options                                                                 | Usage Example                                                                 |
 |--------------|--------------------------------------------------|------------------------------------|-----------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| **`search`** | Semantic code search with AI-powered similarity matching | `<query>`: Search query string    | `-l, --language <lang>`: Filter by language<br>`-t, --type <type>`: Filter by code type<br>`-f, --file <path>`: Filter by file path<br>`-k, --top-k <n>`: Results count (default: 5)<br>`-s, --min-similarity <score>`: Min similarity (default: 0.2)<br>`--format <format>`: Output format (json, table, plain)<br>`--use-llm-judgment`: Enable DSPy-style LLM filtering for disambiguation<br>`--llm-provider <provider>`: LLM provider (openai, anthropic, custom)<br>`--llm-model <model>`: Specific LLM model to use | `node dist/src/cli/cli-main.js search "authentication flow" --language java --top-k 10 --use-llm-judgment --llm-provider custom --llm-model gpt-3.5-turbo` |
-| **`analyze`** | Analyze code structure, dependencies, and complexity | `[file-path]`: Specific file to analyze | `-d, --depth <number>`: Analysis depth (default: 1)<br>`--format <format>`: Output format (json, tree, plain) | `node dist/src/cli/cli-main.js analyze src/memory-manager.ts --format json`      |
-| **`index`**  | Index files or directories for semantic search   | `[path]`: File/directory to index (default: current directory) | `-r, --recursive`: Index recursively<br>`-f, --force`: Force re-indexing   | `node dist/src/cli/cli-main.js index src --recursive`                            |
-| **`index-xrefs`** | Build cross-reference indexes for advanced analysis | *None*                            | *No additional options*                                                    | `node dist/src/cli/cli-main.js index-xrefs`                                      |
-| **`start`**  | Start real-time file watching with auto-reindexing | *None*                            | `-p, --project-path <path>`: Project path (default: current directory)     | `node dist/src/cli/cli-main.js start --project-path /path/to/project`            |
-| **`stats`**  | Display system statistics and index information  | *None*                            | `--format <format>`: Output format (json, table)                           | `node dist/src/cli/cli-main.js stats --format table`                             |
-| **`clear`**  | Clear indexes, vectors, and caches               | *None*                            | `--vectors`: Clear vector store<br>`--cache`: Clear embedding cache<br>`--all`: Clear everything | `node dist/src/cli/cli-main.js clear --all`                                      |
-| **`config`** | Manage configuration settings                    | `<action>`: list, set, reset<br>`[key]`: Configuration key (for set)<br>`[value]`: New value (for set) | *No additional options*                                                    | `node dist/src/cli/cli-main.js config list` |
-| **`server`** | Start MCP server for external client integration | *None*                            | `--transport <type>`: stdio or http<br>`--port <number>`: Port for HTTP transport | `node dist/src/cli/cli-main.js server --transport stdio`                         |
-| **`debug`**  | Debugging and testing utilities                  | `<action>`: test-connection, parse<br>`[file]`: File path (for parse action) | *No additional options*                                                    | `node dist/src/cli/cli-main.js debug test-connection`                            |
-| **`completion`** | Generate shell completion scripts            | `<shell>`: bash, zsh, fish        | *No additional options*                                                    | `node dist/src/cli/cli-main.js completion bash`                                  |
+| **`start-components`** | Start required components (ChromaDB + Admin) | *None* | `-d, --detached`: Run in background<br>`--build`: Build images before starting | `42context start-components --detached` |
+| **`search`** | Semantic code search with AI-powered similarity matching | `<query>`: Search query string    | `-l, --language <lang>`: Filter by language<br>`-t, --type <type>`: Filter by code type<br>`-f, --file <path>`: Filter by file path<br>`-k, --top-k <n>`: Results count (default: 5)<br>`-s, --min-similarity <score>`: Min similarity (default: 0.2)<br>`--format <format>`: Output format (json, table, plain)<br>`--use-llm-judgment`: Enable DSPy-style LLM filtering for disambiguation<br>`--llm-provider <provider>`: LLM provider (openai, anthropic, custom)<br>`--llm-model <model>`: Specific LLM model to use | `42context search "authentication flow" --language java --top-k 10 --use-llm-judgment --llm-provider custom --llm-model gpt-3.5-turbo` |
+| **`analyze`** | Analyze code structure, dependencies, and complexity | `[file-path]`: Specific file to analyze | `-d, --depth <number>`: Analysis depth (default: 1)<br>`--format <format>`: Output format (json, tree, plain) | `42context analyze src/memory-manager.ts --format json`      |
+| **`index`**  | Index files or directories for semantic search   | `[path]`: File/directory to index (default: current directory) | `-r, --recursive`: Index recursively<br>`-f, --force`: Force re-indexing   | `42context index src --recursive`                            |
+| **`index-xrefs`** | Build cross-reference indexes for advanced analysis | *None*                            | *No additional options*                                                    | `42context index-xrefs`                                      |
+| **`start`**  | Start real-time file watching with auto-reindexing | *None*                            | `-p, --project-path <path>`: Project path (default: current directory)     | `42context start --project-path /path/to/project`            |
+| **`stats`**  | Display system statistics and index information  | *None*                            | `--format <format>`: Output format (json, table)                           | `42context stats --format table`                             |
+| **`clear`**  | Clear indexes, vectors, and caches               | *None*                            | `--vectors`: Clear vector store<br>`--cache`: Clear embedding cache<br>`--all`: Clear everything | `42context clear --all`                                      |
+| **`config`** | Manage configuration settings                    | `<action>`: list, set, reset<br>`[key]`: Configuration key (for set)<br>`[value]`: New value (for set) | *No additional options*                                                    | `42context config list` |
+| **`server`** | Start MCP server for external client integration | *None*                            | `--transport <type>`: stdio or http<br>`--port <number>`: Port for HTTP transport | `42context server --transport stdio`                         |
+| **`debug`**  | Debugging and testing utilities                  | `<action>`: test-connection, parse<br>`[file]`: File path (for parse action) | *No additional options*                                                    | `42context debug test-connection`                            |
+| **`completion`** | Generate shell completion scripts            | `<shell>`: bash, zsh, fish        | *No additional options*                                                    | `42context completion bash`                                  |
 
 ### Global Options (Available for All Commands)
 
 | Option               | Description                              | Example                                      |
 |----------------------|------------------------------------------|----------------------------------------------|
-| `-V, --version`     | Display version information             | `node dist/src/cli/cli-main.js --version`       |
-| `-d, --debug`       | Enable debug mode with detailed logging | `node dist/src/cli/cli-main.js --debug search "test"` |
-| `-c, --config <path>` | Specify custom configuration file      | `node dist/src/cli/cli-main.js --config my-config.json search "test"` |
-| `-h, --help`        | Display help for specific command       | `node dist/src/cli/cli-main.js search --help`   |
+| `-V, --version`     | Display version information             | `42context --version`       |
+| `-d, --debug`       | Enable debug mode with detailed logging | `42context --debug search "test"` |
+| `-c, --config <path>` | Specify custom configuration file      | `42context --config my-config.json search "test"` |
+| `-h, --help`        | Display help for specific command       | `42context search --help`   |
 
 ### Quick Start Examples
 
 ```bash
+# Install and setup (one-time)
+npm install -g @aaswe/42context-engine
+42context start-components --detached
+
 # Basic semantic search
-node dist/src/cli/cli-main.js search "authentication flow"
+42context search "authentication flow"
 
 # Advanced search with filters
-node dist/src/cli/cli-main.js search "user authentication" \
+42context search "user authentication" \
   --language java \
   --type function \
   --top-k 10 \
   --min-similarity 0.5
 
-# DSPy-style enhanced search with LLM judgment for disambiguation
-node dist/src/cli/cli-main.js search "example search" \
+# DSPy enhanced search with LLM judgment for disambiguation
+42context search "JOSEParser parse" \
   --language java \
   --use-llm-judgment \
-  --llm-provider custom \
-  --llm-model gpt-3.5-turbo
+  --llm-provider custom
 
 # Index codebase recursively
-node dist/src/cli/cli-main.js index /path/to/code --recursive
+42context index /path/to/code --recursive
 
 # Analyze specific file
-node dist/src/cli/cli-main.js analyze src/memory-manager.ts --format json
+42context analyze src/memory-manager.ts --format json
 
-# Start MCP server for IDE integration
-node dist/src/cli/cli-main.js server --transport stdio
+# Start MCP server for IDE integration (required for MCP clients)
+42context server --transport stdio
 
 # Clear all data and start fresh
-node dist/src/cli/cli-main.js clear --all
+42context clear --all
 ```
 
 ## License
