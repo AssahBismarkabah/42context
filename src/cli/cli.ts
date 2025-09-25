@@ -66,6 +66,21 @@ export class CLIInterface {
         }
       });
 
+    // Start components command - run docker-compose to start ChromaDB
+    program
+      .command('start-components')
+      .description('Start required components (ChromaDB) using docker-compose')
+      .option('-d, --detached', 'Run in detached mode')
+      .option('--build', 'Build images before starting')
+      .action(async (options: any) => {
+        try {
+          await this.startComponentsCommand(options);
+        } catch (error) {
+          console.error('Failed to start components:', error);
+          process.exit(1);
+        }
+      });
+
     // Search command - perform semantic search
     program
       .command('search')
@@ -252,6 +267,68 @@ export class CLIInterface {
 
     await this.engine.start();
   }
+  /**
+   * Start components command implementation
+   */
+  private async startComponentsCommand(options: any): Promise<void> {
+    console.log('Starting 42Context components...');
+    console.log('Initializing vector database and required services...');
+    
+    // Check if docker-compose.yml exists in the package
+    const dockerComposePath = path.resolve(__dirname, '../../docker-compose.yml');
+    
+    try {
+      const { spawn } = require('child_process');
+      
+      // Build the command with proper options
+      let command = 'docker-compose up';
+      if (options.detached) {
+        command += ' -d';
+      }
+      if (options.build) {
+        command += ' --build';
+      }
+
+      console.log('Launching services...');
+      console.log('Starting ChromaDB vector database...');
+      console.log('Starting ChromaDB admin interface...');
+      
+      const process = spawn(command, { 
+        shell: true, 
+        stdio: 'inherit',
+        cwd: path.dirname(dockerComposePath)
+      });
+
+      process.on('close', (code: number) => {
+        if (code === 0) {
+          console.log('✓ 42Context components started successfully!');
+          console.log('✓ ChromaDB is running on port 8000');
+          console.log('✓ ChromaDB Admin is running on port 3001');
+          if (options.detached) {
+            console.log('Services are running in the background.');
+            console.log('Use "docker-compose down" to stop them.');
+          }
+        } else {
+          console.error(`✗ Component startup failed with code ${code}`);
+        }
+      });
+
+      process.on('error', (error: Error) => {
+        console.error('✗ Failed to start components:', error);
+      });
+
+      // If not in detached mode, wait for the process to complete
+      if (!options.detached) {
+        return new Promise<void>((resolve) => {
+          process.on('close', () => resolve());
+        });
+      }
+    } catch (error) {
+      console.error('✗ Failed to start components:', error);
+      throw error;
+    }
+  }
+
 
   /**
    * Search command implementation
