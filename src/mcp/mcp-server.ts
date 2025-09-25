@@ -52,6 +52,10 @@ export class MCPServer {
   async start(): Promise<void> {
     try {
       const logger = getGlobalLogger();
+      
+      // Display banner
+      this.displayBanner();
+      
       logger.info(`Starting ${VersionManager.getBranding().displayName} MCP server: ${this.config.serverName} - v${VersionManager.getBranding().version} - DIAGNOSTIC BUILD`);
 
       // Create transport
@@ -262,6 +266,9 @@ export class MCPServer {
 
     // Start HTTP server
     this.httpServer.listen(port, host, () => {
+      // Display banner for HTTP mode
+      this.displayBanner();
+      
       logger.info(`HTTP server started on ${host}:${port}`);
       logger.info(`MCP server endpoints:`);
       logger.info(`  SSE: http://${host}:${port}/sse`);
@@ -1045,6 +1052,19 @@ export class MCPServer {
   //   const match = signature.match(/:\s*([^\{]+)/);
   //   return match ? match[1].trim() : 'unknown';
   // }
+  /**
+   * Display the banner from docs/banner.txt
+   */
+  private displayBanner(): void {
+    try {
+      const bannerContent = readFileSync('docs/banner.txt', 'utf-8');
+      console.log('\n' + bannerContent + '\n');
+    } catch (error) {
+      // If banner file doesn't exist, just skip it silently
+      const logger = getGlobalLogger();
+      logger.debug('Banner file not found, skipping display');
+    }
+  }
 }
 
 export class MCPServerManager {
