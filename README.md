@@ -27,10 +27,22 @@
 
 **All published versions:** https://www.npmjs.com/package/@aaswe/42context-engine?activeTab=versions
 
-42Context Local Context Engine is a comprehensive code search and analysis tool that leverages MCP for intelligent code understanding. 
+42Context Local Context Engine is a comprehensive code search and analysis tool that leverages MCP for intelligent code understanding.
 it provides advanced AI-powered code search capabilities across codebase.
 
 Key features include natural language queries with vector similarity matching, real-time file system watching with automatic re-indexing, deep AST-based code structure analysis, high-performance similarity search, and full MCP server integration with stdio and HTTP transports. It also incorporates advanced memory management to handle large codebases (7,620+ files) without segmentation faults, along with a comprehensive CLI supporting shell completions.
+
+## Demo Video
+
+
+<div align="center">
+  <video width="800" controls>
+    <source src="docs/42context-demo.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+  <p><em>42Context Engine Demo -  Code Search and Analysis</em></p>
+</div>
+
 
 ## Technical Specifications
 
