@@ -1,58 +1,30 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
+// Import generated version information
+import { VERSION, PACKAGE_NAME, PACKAGE_DESCRIPTION } from './version-generated.js';
 
 /**
- * Version management utility that reads version from package.json
+ * Version management utility using build-time generated version information
+ * This ensures version is always available without runtime file system lookups
  */
 export class VersionManager {
-  private static version: string | null = null;
-  private static packageJson: any = null;
-
   /**
-   * Load package.json and cache version
-   */
-  private static loadPackageJson(): void {
-    if (this.packageJson) return;
-    
-    try {
-      const packageJsonPath = join(process.cwd(), 'package.json');
-      const packageJsonContent = readFileSync(packageJsonPath, 'utf-8');
-      this.packageJson = JSON.parse(packageJsonContent);
-      this.version = this.packageJson.version;
-    } catch (error) {
-      console.error('Failed to load package.json:', error);
-      this.version = '0.1.0'; // fallback version
-    }
-  }
-
-  /**
-   * Get the current version from package.json
+   * Get the current version
    */
   static getVersion(): string {
-    if (!this.version) {
-      this.loadPackageJson();
-    }
-    return this.version || '0.1.0';
+    return VERSION;
   }
 
   /**
-   * Get the package name from package.json
+   * Get the package name
    */
   static getPackageName(): string {
-    if (!this.packageJson) {
-      this.loadPackageJson();
-    }
-    return this.packageJson?.name || 'mcp-local-context-engine';
+    return PACKAGE_NAME;
   }
 
   /**
    * Get the full package description
    */
   static getDescription(): string {
-    if (!this.packageJson) {
-      this.loadPackageJson();
-    }
-    return this.packageJson?.description || 'MCP-Based Local Development Context Engine';
+    return PACKAGE_DESCRIPTION;
   }
 
   /**

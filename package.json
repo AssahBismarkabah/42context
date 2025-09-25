@@ -1,6 +1,6 @@
 {
   "name": "@aaswe/42context-engine",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "AI-powered code search ",
   "main": "dist/src/core/main.js",
   "bin": {
@@ -8,7 +8,7 @@
     "context-search": "dist/src/cli/cli-main.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node scripts/generate-version.js && tsc",
     "build:watch": "tsc --watch",
     "start": "node dist/src/core/main.js",
     "cli": "node --expose-gc dist/src/cli/cli-main.js",
