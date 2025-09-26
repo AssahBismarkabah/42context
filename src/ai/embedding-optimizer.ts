@@ -1,8 +1,8 @@
 
 import { pipeline, Pipeline } from '@xenova/transformers';
-import { MemoryManager } from '../mcp/memory-manager';
-import { MemoryConfigManager } from '../mcp/memory-config';
-import { CodeChunk, EmbeddingResult } from '../core/types';
+import { MemoryManager } from '../mcp/memory-manager.js';
+import { MemoryConfigManager } from '../mcp/memory-config.js';
+import { CodeChunk, EmbeddingResult } from '../core/types.js';
 
 /**
  * Configuration for the embedding optimizer

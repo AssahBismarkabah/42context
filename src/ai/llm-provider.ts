@@ -1,7 +1,7 @@
 
-import { logError } from '../core/logger';
-import { SemanticSearch } from './semantic-search';
-import { SearchResult } from '../core/types';
+import { logError } from '../core/logger.js';
+import { SemanticSearch } from './semantic-search.js';
+import { SearchResult } from '../core/types.js';
 
 /**
  * Universal LLM Provider Interface - Supports any OpenAI-compatible API

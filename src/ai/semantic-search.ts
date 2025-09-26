@@ -1,6 +1,6 @@
-import { CodeParser } from '../analysis/code-parser';
-import { EmbeddingService } from './embedding-service';
-import { ChromaVectorStore } from './chroma-vector-store';
+import { CodeParser } from '../analysis/code-parser.js';
+import { EmbeddingService } from './embedding-service.js';
+import { ChromaVectorStore } from './chroma-vector-store.js';
 import {
   CodeVector,
   SearchOptions,

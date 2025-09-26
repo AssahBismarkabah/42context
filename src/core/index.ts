@@ -2,7 +2,7 @@
 
 import { FileWatcher } from '../storage/file-watcher.js';
 import { SemanticSearch } from '../ai/semantic-search.js';
-import { ConfigManager } from './config.js';
+import { ConfigManager } from './config';
 import { getGlobalLogger, LogLevel } from './logger.js';
 import path from 'path';
 import { readFileSync } from 'fs';
