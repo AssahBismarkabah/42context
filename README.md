@@ -32,12 +32,6 @@ it provides advanced AI-powered code search capabilities across codebase.
 
 Key features include natural language queries with vector similarity matching, real-time file system watching with automatic re-indexing, deep AST-based code structure analysis, high-performance similarity search, and full MCP server integration with stdio and HTTP transports. It also incorporates advanced memory management to handle large codebases (7,620+ files) without segmentation faults, along with a comprehensive CLI supporting shell completions.
 
-## Demo Video
-
-<div align="center">
-  <img src="docs/42context-demo.gif" alt="42Context Engine Demo" width="800">
-  <p><em>42Context Engine Demo – Code Search and Analysis</em></p>
-</div>
 
 
 ## Technical Specifications
