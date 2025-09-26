@@ -32,11 +32,11 @@ async function main() {
 }
 
 // Start the CLI
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch((error) => {
-    console.error('Unhandled error:', error);
-    process.exit(1);
-  });
-}
+// When installed globally via npm, the symlink resolution makes the paths different
+// so we need to always run the main function for CLI usage
+main().catch((error) => {
+  console.error('Unhandled error:', error);
+  process.exit(1);
+});
 
 export { main };
