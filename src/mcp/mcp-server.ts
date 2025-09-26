@@ -632,8 +632,7 @@ export class MCPServer {
     //
     //     // Parse the code snippet to understand its structure
     //     const tempFile = '/tmp/temp_code_snippet.js';
-    //     const fs = require('fs');
-    //     fs.writeFileSync(tempFile, args.code_snippet);
+    //     writeFileSync(tempFile, args.code_snippet);
     //
     //     try {
     //       const chunks = await parser.parseFile(tempFile, args.code_snippet);
@@ -646,8 +645,8 @@ export class MCPServer {
     //       };
     //     } finally {
     //       // Clean up temp file
-    //       if (fs.existsSync(tempFile)) {
-    //         fs.unlinkSync(tempFile);
+    //       if (existsSync(tempFile)) {
+    //         unlinkSync(tempFile);
     //       }
     //     }
     //   }

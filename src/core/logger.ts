@@ -1,4 +1,5 @@
-import { createWriteStream, WriteStream } from 'fs';
+import { createWriteStream, WriteStream, statSync, renameSync, readdirSync, unlinkSync } from 'fs';
+import { dirname, basename, join } from 'path';
 
 export enum LogLevel {
   ERROR = 0,
@@ -104,7 +105,7 @@ export class Logger {
     if (!this.fileStream || !this.logFile) return;
 
     try {
-      const stats = require('fs').statSync(this.logFile);
+      const stats = statSync(this.logFile);
       if (stats.size > this.maxFileSize) {
         this.rotateLogFile();
       }
@@ -122,7 +123,7 @@ export class Logger {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const rotatedFile = `${this.logFile}.${timestamp}`;
       
-      require('fs').renameSync(this.logFile, rotatedFile);
+      renameSync(this.logFile, rotatedFile);
       
       // Clean up old rotated files
       this.cleanupOldLogs();
@@ -138,12 +139,10 @@ export class Logger {
     if (!this.logFile) return;
 
     try {
-      const fs = require('fs');
-      const path = require('path');
-      const logDir = path.dirname(this.logFile);
-      const logBaseName = path.basename(this.logFile);
+      const logDir = dirname(this.logFile);
+      const logBaseName = basename(this.logFile);
       
-      const files = fs.readdirSync(logDir)
+      const files = readdirSync(logDir)
         .filter((file: string) => file.startsWith(logBaseName + '.'))
         .sort()
         .reverse();
@@ -151,7 +150,7 @@ export class Logger {
       // Keep only the most recent maxFiles
       const filesToDelete = files.slice(this.maxFiles);
       filesToDelete.forEach((file: string) => {
-        fs.unlinkSync(path.join(logDir, file));
+        unlinkSync(join(logDir, file));
       });
     } catch (error) {
       // Ignore cleanup errors

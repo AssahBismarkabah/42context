@@ -3,6 +3,8 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 /**
  * Code chunk interface (matching code-parser)
@@ -77,9 +79,8 @@ class CodeStorage {
    */
   private async initializeStorage(): Promise<void> {
     if (this.options.persistToDisk) {
-      const fs = require('fs');
-      if (!fs.existsSync(this.options.storagePath)) {
-        fs.mkdirSync(this.options.storagePath, { recursive: true });
+      if (!existsSync(this.options.storagePath)) {
+        mkdirSync(this.options.storagePath, { recursive: true });
       } else {
         // Load existing chunks from disk
         await this.loadChunksFromDisk();
@@ -143,13 +144,10 @@ class CodeStorage {
    */
   private async persistChunkToDisk(chunk: CodeChunk): Promise<void> {
     try {
-      const fs = require('fs');
-      const path = require('path');
-      
       // Sanitize the chunk ID to create a valid filename
       const sanitizedId = chunk.id.replace(/[/\\:]/g, '_').replace(/\s+/g, '_');
-      const chunkFile = path.join(this.options.storagePath, `${sanitizedId}.json`);
-      fs.writeFileSync(chunkFile, JSON.stringify(chunk));
+      const chunkFile = join(this.options.storagePath, `${sanitizedId}.json`);
+      writeFileSync(chunkFile, JSON.stringify(chunk));
     } catch (error) {
       console.error('Failed to persist chunk to disk:', error);
     }
@@ -160,16 +158,13 @@ class CodeStorage {
    */
   private async loadChunksFromDisk(): Promise<void> {
     try {
-      const fs = require('fs');
-      const path = require('path');
-      
-      const files = fs.readdirSync(this.options.storagePath);
+      const files = readdirSync(this.options.storagePath);
       console.log(`Loading ${files.length} chunks from disk...`);
       
       for (const file of files) {
         if (file.endsWith('.json')) {
-          const filePath = path.join(this.options.storagePath, file);
-          const chunkData = fs.readFileSync(filePath, 'utf8');
+          const filePath = join(this.options.storagePath, file);
+          const chunkData = readFileSync(filePath, 'utf8');
           const chunk: CodeChunk = JSON.parse(chunkData);
           
           // Store in memory cache

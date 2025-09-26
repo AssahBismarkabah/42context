@@ -13,10 +13,15 @@ import { SearchResult } from '../core/types.js';
 import { VersionManager } from '../mcp/version.js';
 import { MemoryManager } from '../mcp/memory-manager.js';
 import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
 
 // Load environment variables from .env file
 config();
 import { MemoryConfigManager } from '../mcp/memory-config.js';
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const program = new Command();
 const logger = getGlobalLogger();
@@ -278,7 +283,7 @@ export class CLIInterface {
     const dockerComposePath = path.resolve(__dirname, '../../docker-compose.yml');
     
     try {
-      const { spawn } = require('child_process');
+      const { spawn } = await import('node:child_process');
       
       // Build the command with proper options
       let command = 'docker-compose up';
