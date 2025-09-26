@@ -1,6 +1,6 @@
 {
   "name": "@aaswe/42context-engine",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "AI-powered code search ",
   "type": "module",
   "main": "dist/src/core/main.js",
