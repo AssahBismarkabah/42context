@@ -5,7 +5,7 @@
  * for large-scale code indexing operations
  */
 
-import { MemoryConfigManager } from './memory-config';
+import { MemoryConfigManager } from './memory-config.js';
 
 export interface MemoryManagerConfig {
   maxHeapSizeMB?: number;

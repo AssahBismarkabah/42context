@@ -1,22 +1,23 @@
 
 
 import type ParserType from 'tree-sitter';
-const Parser = require('tree-sitter');
-const TypeScript = require('tree-sitter-typescript');
-const JavaScript = require('tree-sitter-javascript');
-const Python = require('tree-sitter-python');
-const Go = require('tree-sitter-go');
-const Rust = require('tree-sitter-rust');
-const Cpp = require('tree-sitter-cpp');
+import Parser from 'tree-sitter';
+import TypeScript from 'tree-sitter-typescript';
+import JavaScript from 'tree-sitter-javascript';
+import Python from 'tree-sitter-python';
+import Go from 'tree-sitter-go';
+import Rust from 'tree-sitter-rust';
+import Cpp from 'tree-sitter-cpp';
 
 // Java language module
-let Java: any;
-try {
-  Java = require('tree-sitter-java');
-} catch (error) {
+let Java: any = null;
+// Use dynamic import for ES modules
+import('tree-sitter-java').then(module => {
+  Java = module.default;
+}).catch(error => {
   console.error('Failed to import tree-sitter-java:', error);
   Java = null;
-}
+});
 
 /**
  * Supported programming languages
@@ -65,7 +66,7 @@ export interface CodeChunk {
  * Tree-sitter based code parser for multiple programming languages
  */
 export class CodeParser {
-  private parsers: Map<SupportedLanguage, typeof Parser> = new Map();
+  private parsers: Map<SupportedLanguage, Parser> = new Map();
   private readonly options: Required<CodeParserOptions>;
 
   constructor(options: CodeParserOptions = {}) {
@@ -193,7 +194,7 @@ export class CodeParser {
       const startTime = Date.now();
       
       // Parse the code
-      const tree = parser.parse(content);
+      const tree = (parser as any).parse(content);
       const rootNode = tree.rootNode;
       
       // Extract semantic chunks
@@ -972,8 +973,8 @@ export class CodeParser {
     try {
       // Parse incrementally if we have an old tree
       const tree = oldTree
-        ? parser.parse(content, oldTree)
-        : parser.parse(content);
+        ? (parser as any).parse(content, oldTree)
+        : (parser as any).parse(content);
       
       const chunks = this.extractSemanticChunks(tree.rootNode, filePath, language, content);
       
@@ -1022,24 +1023,7 @@ function createCodeParser(options: CodeParserOptions = {}): CodeParser {
 }
 
 /**
- * CommonJS exports
+ * ES Module exports
  */
-module.exports = CodeParser;
-module.exports.CodeParser = CodeParser;
-module.exports.createCodeParser = createCodeParser;
-
-// Export types for CommonJS
-module.exports.SupportedLanguage = {
-  TypeScript: 'typescript',
-  JavaScript: 'javascript',
-  Python: 'python',
-  Go: 'go',
-  Rust: 'rust',
-  Cpp: 'cpp',
-  C: 'c',
-  Java: 'java'
-};
-
-module.exports.CodeParserOptions = {};
-module.exports.CodeChunk = {};
-module.exports.ASTNodeInfo = {};
+export { createCodeParser };
+export default CodeParser;

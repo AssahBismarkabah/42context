@@ -5,7 +5,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { getGlobalLogger } from '../core/logger.js';
 import { SemanticSearch } from '../ai/semantic-search.js';
 import { EnhancedSemanticSearch, createLLMProvider } from '../ai/llm-provider.js';
-import { ConfigManager } from '../core/config';
+import { ConfigManager } from '../core/config.js';
 import { CodeParser } from '../analysis/code-parser.js';
 import { readFileSync } from 'fs';
 import { z } from 'zod';
