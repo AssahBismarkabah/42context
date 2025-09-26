@@ -32,6 +32,5 @@ export const PACKAGE_DESCRIPTION = '${packageJson.description}';
 const versionFilePath = join(__dirname, '..', 'src', 'mcp', 'version-generated.ts');
 writeFileSync(versionFilePath, versionModule);
 
-console.log(`✅ Generated version file: ${versionFilePath}`);
 console.log(`   Version: ${packageJson.version}`);
 console.log(`   Package: ${packageJson.name}`);
