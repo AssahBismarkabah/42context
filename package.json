@@ -2,6 +2,7 @@
   "name": "@aaswe/42context-engine",
   "version": "2.1.1",
   "description": "AI-powered code search ",
+  "type": "module",
   "main": "dist/src/core/main.js",
   "bin": {
     "42context": "dist/src/cli/cli-main.js",
@@ -13,7 +14,7 @@
     "start": "node dist/src/core/main.js",
     "cli": "node --expose-gc dist/src/cli/cli-main.js",
     "dev": "tsc && node --watch dist/src/core/main.js",
-    "dev:cli": "tsx --expose-gc src/cli/cli-main.ts",
+    "dev:cli": "node --expose-gc --loader tsx src/cli/cli-main.ts",
     "test": "tsc && node --test dist/test/*.js",
     "test:watch": "tsc && node --test --watch",
     "clean": "rm -rf dist"

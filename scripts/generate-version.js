@@ -5,8 +5,12 @@
  * This ensures version is available at runtime without file system lookups
  */
 
-const { readFileSync, writeFileSync } = require('fs');
-const { join } = require('path');
+import { readFileSync, writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Read package.json
 const packageJsonPath = join(__dirname, '..', 'package.json');
