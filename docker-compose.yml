@@ -14,24 +14,28 @@ services:
       - CHROMA_SERVER_AUTH_PROVIDER=${CHROMA_SERVER_AUTH_PROVIDER:-chromadb.auth.token_authn.TokenAuthenticationServerProvider}
       - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_SERVER_AUTH_CREDENTIALS:-test-token}
       - CHROMA_PERSIST_DIRECTORY=/chroma/chroma
+      - CHROMA_CORS_ALLOW_ORIGINS=["http://localhost:3005"]
+      - CHROMA_CORS_ALLOW_HEADERS=["Authorization","Content-Type"]
+      - CHROMA_CORS_ALLOW_METHODS=["GET","POST","PUT","DELETE","OPTIONS"]
     networks:
       - chroma-network
     restart: unless-stopped
 
-  chroma-admin:
-    image: fengzhichao/chromadb-admin:latest
-    container_name: chroma-admin
+  chroma-viz:
+    build:
+      context: ./chroma-42context
+      dockerfile: Dockerfile
+      args:
+        - VITE_CHROMA_URL=http://localhost:8000
+        - VITE_CHROMA_AUTH_TOKEN=test-token
+    container_name: chroma-viz
     ports:
-      - "3001:3001"
-    environment:
-      - CHROMA_API_URL=http://host.docker.internal:8000
+      - "3005:3005"
     depends_on:
       - chromadb
     networks:
       - chroma-network
     restart: unless-stopped
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
 volumes:
   chroma_data:

@@ -11,12 +11,17 @@ import Cpp from 'tree-sitter-cpp';
 
 // Java language module
 let Java: any = null;
+let javaModuleLoaded = false;
+
 // Use dynamic import for ES modules
 import('tree-sitter-java').then(module => {
   Java = module.default;
+  javaModuleLoaded = true;
+  console.log('Java language module loaded successfully');
 }).catch(error => {
   console.error('Failed to import tree-sitter-java:', error);
   Java = null;
+  javaModuleLoaded = false;
 });
 
 /**
@@ -76,13 +81,21 @@ export class CodeParser {
       timeout: options.timeout || 5000 // 5 seconds default
     };
 
-    this.initializeParsers();
+    // Initialize parsers asynchronously
+    this.initializeParsers().catch(error => {
+      console.error('Failed to initialize parsers:', error);
+    });
   }
 
   /**
    * Initialize Tree-sitter parsers for supported languages
    */
-  private initializeParsers(): void {
+  private async initializeParsers(): Promise<void> {
+    // Wait for Java module to load if it's in the languages list
+    if (this.options.languages.includes('java')) {
+      await this.waitForJavaModule();
+    }
+
     for (const language of this.options.languages) {
       try {
         const parser = new Parser();
@@ -98,6 +111,23 @@ export class CodeParser {
       } catch (error) {
         console.error(`Failed to initialize parser for ${language}:`, error);
       }
+    }
+  }
+
+  /**
+   * Wait for Java module to load with timeout
+   */
+  private async waitForJavaModule(): Promise<void> {
+    const maxWaitTime = 5000; // 5 seconds
+    const checkInterval = 100; // 100ms
+    const startTime = Date.now();
+
+    while (!javaModuleLoaded && Date.now() - startTime < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    if (!javaModuleLoaded) {
+      console.warn('Java module failed to load within timeout period');
     }
   }
 
@@ -172,6 +202,9 @@ export class CodeParser {
    * Parse a code file and extract semantic chunks
    */
   async parseFile(filePath: string, content: string): Promise<CodeChunk[]> {
+    // Ensure parsers are initialized before parsing
+    await this.ensureParsersInitialized();
+    
     const language = this.detectLanguage(filePath);
     if (!language) {
       console.warn(`Unsupported language for file: ${filePath}`);
@@ -953,13 +986,25 @@ export class CodeParser {
   }
 
   /**
-   * Parse a code file incrementally (for file changes)
+   * Ensure parsers are initialized before use
    */
+  private async ensureParsersInitialized(): Promise<void> {
+    if (this.parsers.size === 0) {
+      await this.initializeParsers();
+    }
+  }
+
+  /**
+    * Parse a code file incrementally (for file changes)
+    */
   async parseFileIncremental(
     filePath: string,
     content: string,
     oldTree?: ParserType.Tree
   ): Promise<{ chunks: CodeChunk[]; tree: ParserType.Tree }> {
+    // Ensure parsers are initialized before parsing
+    await this.ensureParsersInitialized();
+    
     const language = this.detectLanguage(filePath);
     if (!language) {
       return { chunks: [], tree: oldTree! };

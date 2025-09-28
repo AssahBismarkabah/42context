@@ -71,10 +71,10 @@ export class CLIInterface {
         }
       });
 
-    // Start components command - run docker-compose to start ChromaDB
+    // Start components command - run docker-compose to start ChromaDB and 3D visualization
     program
       .command('start-components')
-      .description('Start required components (ChromaDB) using docker-compose')
+      .description('Start required components (ChromaDB and 3D visualization) using docker-compose')
       .option('-d, --detached', 'Run in detached mode')
       .option('--build', 'Build images before starting')
       .action(async (options: any) => {
@@ -296,7 +296,7 @@ export class CLIInterface {
 
       console.log('Launching services...');
       console.log('Starting ChromaDB vector database...');
-      console.log('Starting ChromaDB admin interface...');
+      console.log('Starting 3D visualization interface...');
       
       const process = spawn(command, { 
         shell: true, 
@@ -308,7 +308,7 @@ export class CLIInterface {
         if (code === 0) {
           console.log('✓ 42Context components started successfully!');
           console.log('✓ ChromaDB is running on port 8000');
-          console.log('✓ ChromaDB Admin is running on port 3001');
+          console.log('✓ 3D visualization is running on port 3005');
           if (options.detached) {
             console.log('Services are running in the background.');
             console.log('Use "docker-compose down" to stop them.');
