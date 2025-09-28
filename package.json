@@ -1,6 +1,6 @@
 {
   "name": "@aaswe/42context-engine",
-  "version": "2.1.6",
+  "version": "3.0.0",
   "description": "AI-powered code search ",
   "type": "module",
   "main": "dist/src/core/main.js",
@@ -44,7 +44,15 @@
     "docker-compose.yml",
     "mcp-config.json",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "chroma-42context/",
+    "chroma-42context/Dockerfile",
+    "chroma-42context/package.json",
+    "chroma-42context/tsconfig.json",
+    "chroma-42context/vite.config.ts",
+    "chroma-42context/src/",
+    "chroma-42context/public/",
+    "chroma-42context/dist/"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0",
