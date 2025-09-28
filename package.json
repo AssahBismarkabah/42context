@@ -1,6 +1,6 @@
 {
   "name": "@aaswe/42context-engine",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "AI-powered code search ",
   "type": "module",
   "main": "dist/src/core/main.js",
@@ -47,6 +47,7 @@
     "LICENSE",
     "chroma-42context/Dockerfile",
     "chroma-42context/package.json",
+    "chroma-42context/package-lock.json",
     "chroma-42context/tsconfig.json",
     "chroma-42context/vite.config.ts",
     "chroma-42context/src/",
