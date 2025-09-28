@@ -285,8 +285,18 @@ export class CLIInterface {
     try {
       const { spawn } = await import('node:child_process');
       
+      // Check if docker-compose v1 or v2 is available
+      const dockerComposeV1Available = await this.checkDockerComposeV1();
+      const useV1 = dockerComposeV1Available;
+      
       // Build the command with proper options
-      let command = 'docker-compose up';
+      let command: string;
+      if (useV1) {
+        command = 'docker-compose up';
+      } else {
+        command = 'docker compose up';
+      }
+      
       if (options.detached) {
         command += ' -d';
       }
@@ -1174,6 +1184,19 @@ complete -c mcp-context-engine -n "__fish_seen_subcommand_from debug" -a "test-c
       await server.stop();
       process.exit(0);
     });
+  }
+
+  /**
+   * Check if Docker Compose v1 is available
+   */
+  private async checkDockerComposeV1(): Promise<boolean> {
+    try {
+      const { execSync } = await import('node:child_process');
+      execSync('docker-compose --version', { stdio: 'ignore' });
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 }
 export default CLIInterface;
